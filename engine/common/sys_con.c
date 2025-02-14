@@ -17,17 +17,14 @@ GNU General Public License for more details.
 #ifdef __ANDROID__
 #include <android/log.h>
 #endif
+#include <string.h>
+#include <errno.h>
 
 // Don't enable colorized console on win32 and mobile devices
 #if !defined( _WIN32 ) && !defined( XASH_MOBILE_PLATFORM )
 #define COLORIZE_CONSOLE 1
 #else
 #define COLORIZE_CONSOLE 0
-#endif
-
-#ifdef USE_SELECT
-// non-blocking console input
-#include <sys/select.h>
 #endif
 
 typedef struct {
@@ -42,43 +39,20 @@ static LogData s_ld;
 
 char *Sys_Input( void )
 {
-#ifdef USE_SELECT
-	{
-		fd_set rfds;
-		static char line[1024];
-		static int len;
-		struct timeval tv;
-		tv.tv_sec = 0;
-		tv.tv_usec = 0;
-		FD_ZERO(&rfds);
-		FD_SET(0, &rfds); // stdin
-		while( select(1, &rfds, NULL, NULL, &tv ) > 0 )
-		{
-			if( read( 0, &line[len], 1 ) != 1 )
-				break;
-			if( line[len] == '\n' || len > 1022 )
-			{
-				line[ ++len ] = 0;
-				len = 0;
-				return line;
-			}
-			len++;
-			tv.tv_sec = 0;
-			tv.tv_usec = 0;
-		}
-	}
-#endif
-#ifdef XASH_W32CON
+#ifdef _WIN32
 	return Wcon_Input();
-#endif
+#elif defined( __linux__ ) && !defined( __ANDROID__ ) || defined( __FreeBSD__ ) || defined( __NetBSD__ ) || defined( __OpenBSD__ )
+	return Posix_Input();
+#else
 	return NULL;
+#endif
 }
 
 void Sys_DestroyConsole( void )
 {
 	// last text message into console or log
-	MsgDev( D_NOTE, "Sys_DestroyConsole: Exiting!\n" );
-#ifdef XASH_W32CON
+	Sys_Print( "Sys_DestroyConsole: Exiting!\n" );
+#ifdef _WIN32
 	Wcon_DestroyConsole();
 #endif
 }
@@ -153,8 +127,7 @@ void Sys_InitLog( void )
 		if( !s_ld.logfile )
 		{
 				s_ld.log_active = false;
-				MsgDev( D_ERROR, "Sys_InitLog: can't create log file %s\n", s_ld.log_path );
-				Sys_Warn( "Failed to open log file %s!\nAre you sure you have write access?", s_ld.log_path );
+				MsgDev( D_ERROR, "Sys_InitLog: can't create log file %s: %s\n", s_ld.log_path, strerror( errno ) );
 				return;
 		}
 		else s_ld.logfileno = fileno( s_ld.logfile );
@@ -224,7 +197,7 @@ void Sys_PrintLog( const char *pMsg )
 		printf( "\033[34m%s\033[0m%s\033[0m", logtime, colored );
 	}
 #else
-#if !defined __ANDROID__ || defined XASH_DEDICATED
+#if !defined __ANDROID__ && !defined _WIN32 || defined XASH_DEDICATED
 	printf( "%s %s", logtime, pMsg );
 	fflush( stdout );
 #endif

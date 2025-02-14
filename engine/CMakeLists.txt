@@ -28,22 +28,22 @@ fwgs_fix_default_msvc_settings()
 file(GLOB_RECURSE XASH_ENGINE_SOURCES         common/*.c server/*.c ) # Minimal sources
 file(GLOB_RECURSE XASH_ENGINE_WIN32_SOURCES   ../game_launch/game.rc platform/win32/*.c) # Win32 only sources
 file(GLOB_RECURSE XASH_ENGINE_SDL_SOURCES     platform/sdl/*.c) # SDL version sources
-#file(GLOB_RECURSE XASH_ENGINE_POSIX_SOURCES     platform/posix/*.c) # Posix sources
+file(GLOB_RECURSE XASH_ENGINE_POSIX_SOURCES    platform/posix/con_posix.c) # Posix sources
 file(GLOB_RECURSE XASH_ENGINE_STUB_SOURCES     platform/stub/*.c) # Stub sources
 file(GLOB_RECURSE XASH_ENGINE_ANDROID_SOURCES platform/android/*.c) # Android sources
 file(GLOB_RECURSE XASH_ENGINE_CLIENT_SOURCES  client/*.c) # Client sources
 
 if(NOT WIN32 AND NOT APPLE)
-	find_package (Libunwind)
+	find_package (Libunwind QUIET)
 endif()
 
 if(LIBUNWIND_FOUND AND UNIX AND NOT APPLE)
 	message(STATUS "libunwind found")
 	include_directories(${LIBUNWIND_INCLUDE_DIRS})
-	file(GLOB XASH_ENGINE_POSIX_SOURCES platform/posix/crashhandler_libunwind.c)
+	list(APPEND XASH_ENGINE_POSIX_SOURCES platform/posix/crashhandler_libunwind.c)
 elseif(UNIX)
 	message(STATUS "libunwind not found")
-	file(GLOB XASH_ENGINE_POSIX_SOURCES platform/posix/crashhandler.c)
+	list(APPEND XASH_ENGINE_POSIX_SOURCES platform/posix/crashhandler.c)
 	set(LIBUNWIND_INCLUDE_DIR "")
 	set(LIBUNWIND_LIBRARIES "")
 elseif(NOT WIN32)
@@ -110,6 +110,9 @@ endif()
 if(XASH_SINGLE_BINARY) # Set executable or library
 	add_definitions(-DSINGLE_BINARY)
 	add_executable(${XASH_ENGINE} ${XASH_ENGINE_SOURCES})
+	if(MSVC)
+		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS")
+	endif()
 else()
 	add_library(${XASH_ENGINE} SHARED ${XASH_ENGINE_SOURCES})
 endif()
@@ -123,7 +126,7 @@ if(MSVC)
 endif()
 
 if(WIN32 AND NOT XASH_64BIT)
-	add_definitions( -DDBGHELP -DXASH_W32CON) # dbghelp crashhandler
+	add_definitions(-DDBGHELP) # dbghelp crashhandler
 	if(MINGW)
 		target_link_libraries(${XASH_ENGINE} -luser32 -lkernel32 -lgdi32 -lws2_32 -ldbghelp -lpsapi)
 	elseif(MSVC)
@@ -165,6 +168,12 @@ if(XASH_SDL)
 	add_definitions(-DXASH_SDL)
 	if(MSVC)
 		string(REGEX REPLACE "lib$" "dll" SDL2_DLL "${SDL2_LIBRARY}")
+		foreach(path IN LISTS SDL2_DLL)
+			# Keep the path that ends with .dll
+			if(path MATCHES ".*\\.dll$")
+				set(SDL2_DLL "${path}")
+			endif()
+		endforeach()
 		install(FILES ${SDL2_DLL}
 			CONFIGURATIONS Debug
 			DESTINATION ${LIB_INSTALL_DIR}/Debug/)

@@ -1103,6 +1103,18 @@ void CL_CheckingResFile( char *pResFileName )
 	if( FS_FileExists( pResFileName, false ))
 		return;	// already exists
 
+	if( !cl_allow_download->integer )
+	{
+		MsgDev( D_NOTE, "Download refused, cl_allow_download is 0\n" );
+		return; // disabled downloads
+	}
+
+	if( !HTTP_IsSafeFileToDownload( pResFileName ) )
+	{
+		MsgDev( D_WARN, "Refusing to download %s\n", pResFileName );
+		return; // unsafe file
+	}
+
 	downloadcount++;
 
 	if( cl_allow_fragment->integer )
@@ -1700,7 +1712,11 @@ void CL_ParseServerMessage( sizebuf_t *msg )
 			{
 				// if it's local client, do not clean states on serverdata packet
 				if( Host_IsLocalClient() )
+				{
 					cls.changelevel = true;
+				}
+				else
+					Key_ClearStates();
 
 				S_StopAllSounds();
 
@@ -1709,7 +1725,6 @@ void CL_ParseServerMessage( sizebuf_t *msg )
 					SCR_BeginLoadingPlaque( cl.background );
 					cls.changedemo = true;
 				}
-				else Key_ClearStates();
 			}
 			else MsgDev( D_INFO, "Server disconnected, reconnecting\n" );
 
@@ -1740,9 +1755,8 @@ void CL_ParseServerMessage( sizebuf_t *msg )
 			cl.mtime[0] = BF_ReadFloat( msg );			
 			break;
 		case svc_print:
-			i = BF_ReadByte( msg );
-			MsgDev( D_INFO, "^6%s", BF_ReadString( msg ));
-			if( i == PRINT_CHAT ) S_StartLocalSound( "common/menu2.wav", VOL_NORM, false );
+			i = BF_ReadByte( msg ); // print level
+			MsgDev( D_INFO, "%s", BF_ReadString( msg ));
 			break;
 		case svc_stufftext:
 			CL_ParseStuffText( msg );

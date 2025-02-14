@@ -7,8 +7,6 @@ include $(CLEAR_VARS)
 
 LOCAL_MODULE := xash
 
-APP_PLATFORM := android-12
-
 include $(XASH3D_CONFIG)
 
 LOCAL_CFLAGS += -D__MULTITEXTURE_SUPPORT__ -DXASH_GLES -DXASH_NANOGL -DUSE_EVDEV -DXASH_DYNAMIC_DLADDR -DXASH_OPENSL -DXASH_SKIPCRTLIB -DXASH_FORCEINLINE -DXASH_FASTSTR
@@ -118,6 +116,7 @@ LOCAL_SRC_FILES := \
            common/net_chan.c \
            common/net_encode.c \
            common/net_huff.c \
+	   common/net_http.c \
            common/network.c \
            common/pm_surface.c \
            common/pm_trace.c \

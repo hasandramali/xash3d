@@ -893,12 +893,12 @@ void GL_InitCommands( void )
 	gl_keeptjunctions = Cvar_Get( "gl_keeptjunctions", "1", CVAR_ARCHIVE, "disable to reduce vertexes count but removing tjuncs causes blinking pixels" );
 	gl_allow_static = Cvar_Get( "gl_allow_static", "0", CVAR_ARCHIVE, "force to drawing non-moveable brushes as part of world (save FPS)" );
 	gl_allow_mirrors = Cvar_Get( "gl_allow_mirrors", "1", CVAR_ARCHIVE, "allow to draw mirror surfaces(deprecated, may be removed from future builds)" );
-	gl_showtextures = Cvar_Get( "r_showtextures", "0", CVAR_CHEAT, "show all uploaded textures (type values from 1 to 13)" );
+	gl_showtextures = Cvar_Get( "r_showtextures", "0", CVAR_ARCHIVE, "show all uploaded textures (type values from 1 to 13)" );
 	gl_finish = Cvar_Get( "gl_finish", "0", CVAR_ARCHIVE, "use glFinish instead of glFlush" );
 	gl_nosort = Cvar_Get( "gl_nosort", "0", CVAR_ARCHIVE, "disable sorting of translucent surfaces" );
 	gl_clear = Cvar_Get( "gl_clear", "0", CVAR_ARCHIVE, "clearing screen after each frame" );
 	gl_test = Cvar_Get( "gl_test", "0", 0, "engine developer cvar for quick testing new features" );
-	gl_wireframe = Cvar_Get( "gl_wireframe", "0", CVAR_CHEAT, "show wireframe overlay" );
+	gl_wireframe = Cvar_Get( "gl_wireframe", "0", CVAR_ARCHIVE, "show wireframe overlay" );
 	gl_overview = Cvar_Get( "dev_overview", "0", 0, "show level overview" );
 	gl_overbright = Cvar_Get( "gl_overbright", "0", CVAR_ARCHIVE, "Overbright mode (0-2)");
 	gl_overbright_studio = Cvar_Get( "gl_overbright_studio", "0", CVAR_ARCHIVE, "Overbright for studiomodels");
@@ -909,7 +909,7 @@ void GL_InitCommands( void )
 	// make sure r_swapinterval is checked after vid_restart
 	gl_swapInterval->modified = true;
 
-	vid_gamma = Cvar_Get( "gamma", "1.5", CVAR_ARCHIVE|CVAR_LOCALONLY, "gamma amount" );
+	vid_gamma = Cvar_Get( "gamma", "2.5", CVAR_ARCHIVE|CVAR_LOCALONLY, "gamma amount" );
 	vid_texgamma = Cvar_Get( "texgamma", "2.2", CVAR_LOCALONLY, "texgamma amount (default Half-Life artwork gamma)" );
 	vid_mode = Cvar_Get( "vid_mode", VID_AUTOMODE, CVAR_RENDERINFO, "display resolution mode" );
 	vid_fullscreen = Cvar_Get( "fullscreen", "0", CVAR_RENDERINFO, "set in 1 to enable fullscreen mode" );

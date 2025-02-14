@@ -1292,24 +1292,30 @@ void Cvar_Unlink_f( void )
 ============
 Cvar_Unlink
 
-unlink all cvars with flag CVAR_CLIENTDLL
+unlink all cvars with specified flag
 ============
 */
-void Cvar_Unlink( void )
+void Cvar_Unlink( int group )
 {
 	convar_t	*var;
 	convar_t	**prev;
 
-	if( Cvar_VariableInteger( "host_clientloaded" ))
+	if( Cvar_VariableInteger( "host_clientloaded" ) && ( group & CVAR_CLIENTDLL ) )
 	{
 		MsgDev( D_NOTE, "Can't unlink cvars while client is loaded.\n" );
 		return;
 	}
 
+	if( Cvar_VariableInteger( "host_gameloaded" ) && ( group & FCVAR_EXTDLL ) )
+	{
+		MsgDev( D_NOTE, "Can't unlink cvars while server is loaded\n" );
+		return;
+	}
+
 	for( prev = &cvar_vars; ( var = *prev ); )
 	{
-		// ignore all non-client cvars
-		if( !( var->flags & CVAR_CLIENTDLL ))
+		// do filter by specified group
+		if( !( var->flags & group ))
 		{
 			prev = &var->next;
 			continue;
@@ -1344,6 +1350,8 @@ void Cvar_Init( void )
 	physinfo = Cvar_Get( "@physinfo", "0", CVAR_READ_ONLY, "" ); // use ->modified value only
 	serverinfo = Cvar_Get( "@serverinfo", "0", CVAR_READ_ONLY, "" ); // use ->modified value only
 	renderinfo = Cvar_Get( "@renderinfo", "0", CVAR_READ_ONLY, "" ); // use ->modified value only
+
+	host_developer = Cvar_Get( "developer", "0", CVAR_LOCALONLY, "current developer level" );
 
 	Cmd_AddRestrictedCommand ("toggle", Cvar_Toggle_f, "toggles a console variable's value (use for more info)" );
 	Cmd_AddRestrictedCommand ("set", Cvar_Set_f, "create or change the value of a console variable" );

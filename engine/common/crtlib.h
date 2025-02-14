@@ -35,7 +35,8 @@ enum
 
 #define CMD_EXTDLL		BIT( 0 )		// added by game.dll
 #define CMD_CLIENTDLL	BIT( 1 )		// added by client.dll
-#define CMD_LOCALONLY   BIT( 2 )        // should be executed only from local buffers
+#define CMD_GAMEUIDLL	BIT( 2 )		// added by GameUI.dll
+#define CMD_LOCALONLY	BIT( 3 )		// should be executed only from local buffers
 
 typedef void (*setpair_t)( const char *key, const char *value, void *buffer, void *numpairs );
 typedef void (*xcommand_t)( void );
@@ -119,7 +120,7 @@ void Cvar_WriteVariables( file_t *f );
 void Cvar_Init( void );
 char *Cvar_Userinfo( void );
 char *Cvar_Serverinfo( void );
-void Cvar_Unlink( void );
+void Cvar_Unlink( int group );
 
 //
 // cmd.c
@@ -136,6 +137,7 @@ char *Cmd_Argv( int arg );
 void Cmd_Init( void );
 void Cmd_Shutdown( void );
 void Cmd_Unlink( int group );
+void Cmd_AddCommandEx( const char *funcname, const char *cmd_name, xcommand_t function, const char *cmd_desc, int iFlags );
 void Cmd_AddCommand( const char *cmd_name, xcommand_t function, const char *cmd_desc );
 void Cmd_AddRestrictedCommand( const char *cmd_name, xcommand_t function, const char *cmd_desc );
 void Cmd_AddGameCommand( const char *cmd_name, xcommand_t function );
@@ -282,10 +284,16 @@ const char *Q_timestamp( int format );
 #ifndef XASH_SKIPCRTLIB
 char *Q_stristr( const char *string, const char *string2 );
 char *Q_strstr( const char *string, const char *string2 );
-#define Q_vsprintf( buffer, format, args ) Q_vsnprintf( buffer, 99999, format, args )
+#if XASH_USE_STB_SPRINTF
+#define STB_SPRINTF_DECORATE( name ) Q_##name
+#undef Q_vsprintf
+#include "stb/stb_sprintf.h"
+#else // XASH_USE_STB_SPRINTF
 int Q_vsnprintf( char *buffer, size_t buffersize, const char *format, va_list args );
 int Q_snprintf( char *buffer, size_t buffersize, const char *format, ... ) _format(3);
 int Q_sprintf( char *buffer, const char *format, ... ) _format(2);
+#endif
+#define Q_vsprintf( buffer, format, args ) Q_vsnprintf( buffer, 99999, format, args )
 #else // XASH_SKIPCRTLIB
 #define Q_stristr strcasestr
 #define Q_strstr strstr
@@ -317,6 +325,7 @@ void _Q_memmove( void *dest, const void *src, size_t count, const char *filename
 //
 // zone.c
 //
+void Memory_Init( void );
 void *_Mem_Realloc( byte *poolptr, void *memptr, size_t size, const char *filename, int fileline );
 void *_Mem_Alloc( byte *poolptr, size_t size, const char *filename, int fileline );
 byte *_Mem_AllocPool( const char *name, const char *filename, int fileline );

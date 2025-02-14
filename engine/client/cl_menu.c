@@ -958,6 +958,17 @@ static void pfnWriteGameConfig( const char *name )
 	FS_Delete( "game.cfg" );
 }
 
+/*
+============
+Cmd_AddGameUICommand
+============
+*/
+static int Cmd_AddGameUICommand( const char *cmd_name, xcommand_t function )
+{
+	Cmd_AddCommandEx( "Cmd_AddGameUICommand", cmd_name, function, "menu command", CMD_GAMEUIDLL );
+	return 1;
+}
+
 // engine callbacks
 static ui_enginefuncs_t gEngfuncs = 
 {
@@ -978,7 +989,7 @@ static ui_enginefuncs_t gEngfuncs =
 	Cvar_VariableString,
 	pfnCvarSet,
 	pfnCvarSetValue,
-	pfnAddClientCommand,
+	Cmd_AddGameUICommand,
 	pfnClientCmd,
 	Cmd_RemoveCommand,
 	Cmd_Argc,
@@ -1059,6 +1070,9 @@ void UI_UnloadProgs( void )
 	// deinitialize game
 	menu.dllFuncs.pfnShutdown();
 
+	Cvar_FullSet( "host_menuloaded", "0", CVAR_INIT );
+	Cmd_Unlink( CMD_GAMEUIDLL );
+
 	Com_FreeLibrary( menu.hInstance );
 	Mem_FreePool( &menu.mempool );
 	Q_memset( &menu, 0, sizeof( menu ));
@@ -1133,6 +1147,8 @@ qboolean UI_LoadProgs( void )
 		menu.modsInfo[i] = Mem_Alloc( menu.mempool, sizeof( GAMEINFO ));
 		UI_ConvertGameInfo( menu.modsInfo[i], SI.games[i] );
 	}
+
+	Cvar_FullSet( "host_menuloaded", "1", CVAR_INIT );
 
 	UI_ConvertGameInfo( &menu.gameInfo, SI.GameInfo ); // current gameinfo
 

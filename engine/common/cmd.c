@@ -209,7 +209,7 @@ void Cbuf_AddFilterText( const char *text )
 				}
 				else if( cmd )
 				{
-					if( !( cmd->flags & CMD_LOCALONLY ) )
+					if( !( cmd->flags & CMD_LOCALONLY ) && !( cmd->flags & CMD_GAMEUIDLL ) )
 					{
 						MsgDev( D_NOTE, "AddFilterText(cmd, allowed): %s", line );
 						Cbuf_AddText( line );
@@ -748,7 +748,7 @@ void Cmd_TokenizeString( const char *text )
 Cmd_AddCommandEx
 ============
 */
-static void Cmd_AddCommandEx( const char *funcname, const char *cmd_name, xcommand_t function, 
+void Cmd_AddCommandEx( const char *funcname, const char *cmd_name, xcommand_t function,
 	const char *cmd_desc, int iFlags )
 {
 	cmd_t	*cmd;
@@ -1303,6 +1303,12 @@ void Cmd_Unlink( int group )
 	if( Cvar_VariableInteger( "host_clientloaded" ) && ( group & CMD_CLIENTDLL ))
 	{
 		Msg( "Can't unlink commands while client is loaded\n" );
+		return;
+	}
+
+	if( Cvar_VariableInteger( "host_menuloaded" ) && ( group & CMD_GAMEUIDLL ))
+	{
+		Msg( "Can't unlink commands while menu is loaded\n" );
 		return;
 	}
 

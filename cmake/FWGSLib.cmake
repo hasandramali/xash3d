@@ -300,7 +300,7 @@ endmacro()
 # */
 macro(xash_link_sdl2 tgt)
         if(WIN32)
-                set(SDL2_VER "2.0.14")
+                set(SDL2_VER "2.0.20")
                 set(SDL2_DEVELPKG "VC.zip")
                 set(SDL2_SUBDIR "SDL2-${SDL2_VER}")
                 set(SDL2_ARCHIVE "SDL2.zip")
@@ -351,6 +351,14 @@ set(archdetect_c_code "
 		#endif
 #elif defined(__i386) || defined(__i386__) || defined(_M_IX86)
     #error cmake_ARCH i386
+#elif defined(__riscv)
+    #if __riscv_xlen == 64
+        #error cmake_ARCH riscv64
+    #elif __riscv_xlen == 32
+        #error cmake_ARCH riscv32
+    #else
+        #error Unknown RISC-V ABI
+    #endif
 #elif defined(__x86_64) || defined(__x86_64__) || defined(__amd64) || defined(_M_X64)
     #error cmake_ARCH x86_64
 #elif defined(__ia64) || defined(__ia64__) || defined(_M_IA64)

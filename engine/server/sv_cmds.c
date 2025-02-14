@@ -953,6 +953,16 @@ void SV_Status_f( void )
 	sv_client_t	*cl;
 	edict_t		*ent;
 
+	// Forward the command if we're a non local client
+	if( cmd_source == src_command )
+	{
+		if( !Host_IsLocalClient() && !Host_IsDedicated() )
+		{
+			Cmd_ForwardToServer();
+			return;
+		}
+	}
+
 	if( !svs.clients || sv.background )
 	{
 		Msg( "^3No server running.\n" );
@@ -1273,6 +1283,12 @@ Reconnect all clients (useful when adding resources)
 */
 void SV_SendReconnect_f( void )
 {
+	if( !SV_Active() )
+	{
+		Msg( "^3No server running.\n" );
+		return;
+	}
+
 	char *message = "Reconnect by console request!\n";
 
 	if( Cmd_Argc() > 1 )
@@ -1285,6 +1301,12 @@ void SV_DumpPrecache_f( void )
 {
 	int index;
 	file_t *f = FS_Open( "precache-dump.txt", "w", false );
+
+	if( !SV_Active() )
+	{
+		Msg( "^3No server running.\n" );
+		return;
+	}
 
 	if( !f )
 	{
@@ -1321,6 +1343,12 @@ void SV_DumpResList_f( void )
 {
 	int index;
 	file_t *f = FS_Open( "reslist-dump.txt", "w", false );
+
+	if( !SV_Active() )
+	{
+		Msg( "^3No server running.\n" );
+		return;
+	}
 
 	if( !f )
 	{

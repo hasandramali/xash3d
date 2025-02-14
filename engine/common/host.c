@@ -53,6 +53,7 @@ sysinfo_t		SI;
 
 convar_t	*host_serverstate;
 convar_t	*host_gameloaded;
+convar_t	*host_menuloaded;
 convar_t	*host_clientloaded;
 convar_t	*host_limitlocal;
 convar_t	*host_cheats;
@@ -67,6 +68,8 @@ convar_t	*host_build, *host_ver; // fork info
 convar_t	*host_mapdesign_fatal;
 convar_t	*host_developer = NULL;
 convar_t 	*cmd_scripting = NULL;
+
+int g_developer = DEFAULT_DEV;
 
 static int num_decals;
 int num_frame;
@@ -136,7 +139,9 @@ void Sys_PrintUsage( void )
 	;
 #undef O
 
-	Sys_Error( "%s", usage_str );
+	fprintf( stdout, "%s", usage_str );
+	MSGBOX( usage_str );
+	Sys_Quit();
 }
 
 // these cvars will be duplicated on each client across network
@@ -437,7 +442,7 @@ void Host_Clear_f( void )
 #ifndef XASH_DEDICATED
 	Con_Clear();
 #endif
-#ifdef XASH_W32CON
+#ifdef _WIN32
 	Wcon_Clear();
 #endif
 }
@@ -976,7 +981,6 @@ Host_InitCommon
 void Host_InitCommon( int argc, const char** argv, const char *progname, qboolean bChangeGame )
 {
 	char		dev_level[4];
-	int		developer = DEFAULT_DEV;
 	char		*baseDir;
 	int		retval_stdin, retval_stderr, retval_stdout;
 
@@ -1105,18 +1109,20 @@ void Host_InitCommon( int argc, const char** argv, const char *progname, qboolea
 	host.state = HOST_INIT; // initialization started
 	host.textmode = false;
 
+	Memory_Init(); // init memory subsystem
+
 	host.mempool = Mem_AllocPool( "Zone Engine" );
 
-	if( Sys_CheckParm( "-console" )) developer = 1;
+	if( Sys_CheckParm( "-console" )) g_developer = 1;
 	if( Sys_CheckParm( "-dev" ))
 	{
 		if( Sys_GetParmFromCmdLine( "-dev", dev_level ))
 		{
 			if( Q_isdigit( dev_level ))
-				developer = abs( Q_atoi( dev_level ));
-			else developer++; // -dev == 1, -dev -console == 2
+				g_developer = abs( Q_atoi( dev_level ));
+			else g_developer++; // -dev == 1, -dev -console == 2
 		}
-		else developer++; // -dev == 1, -dev -console == 2
+		else g_developer++; // -dev == 1, -dev -console == 2
 	}
 
 #ifdef XASH_DEDICATED
@@ -1154,14 +1160,18 @@ void Host_InitCommon( int argc, const char** argv, const char *progname, qboolea
 	if ( !host.rootdir[0] || SetCurrentDirectory( host.rootdir ) != 0 )
 	{
 		// tyabus: We don't have host_developer yet
-		if( developer >= D_INFO )
+		if( g_developer >= D_INFO )
 			Msg( "%s is working directory now\n", host.rootdir );
 	}
 	else
 		Sys_Error( "Changing working directory to %s failed.\n", host.rootdir );
 
-	if( developer != 0 )
-		Sys_InitLog();
+	if ( g_developer > 0 )
+	{
+		Sys_InitLog( );
+		// print current developer level to simplify processing users feedback
+		Msg( "Developer level: ^3%i\n", g_developer );
+	}
 
 	// set default gamedir
 	if( progname[0] == '#' ) progname++;
@@ -1171,12 +1181,12 @@ void Host_InitCommon( int argc, const char** argv, const char *progname, qboolea
 	{
 		Sys_MergeCommandLine( );
 
-		if( developer < 3 ) developer = 3; // otherwise we see empty console
+		if( g_developer < 3 ) g_developer = 3; // otherwise we see empty console
 	}
 	else
 	{
 		// don't show console as default
-		if( developer < D_WARN ) host.con_showalways = false;
+		if( g_developer < D_WARN ) host.con_showalways = false;
 	}
 
 	BaseCmd_Init();
@@ -1185,10 +1195,10 @@ void Host_InitCommon( int argc, const char** argv, const char *progname, qboolea
 	Cmd_Init();
 	Cvar_Init();
 
-	host_developer = Cvar_Get( "developer", "0", CVAR_LOCALONLY, "current developer level" );
+	// early console init to catch all the messages
+	Con_Init();
 
-#ifdef XASH_W32CON
-	Wcon_Init();
+#ifdef _WIN32
 	Wcon_CreateConsole();
 #endif
 
@@ -1198,7 +1208,7 @@ void Host_InitCommon( int argc, const char** argv, const char *progname, qboolea
 	Cmd_AddRestrictedCommand( "clear", Host_Clear_f, "clear console history" );
 
 	// share developer level across all dlls
-	Q_snprintf( dev_level, sizeof( dev_level ), "%i", developer );
+	Q_snprintf( dev_level, sizeof( dev_level ), "%i", g_developer );
 	Cvar_SetFloat( host_developer->name, Q_atoi( dev_level ) );
 
 	Cmd_AddRestrictedCommand( "exec", Host_Exec_f, "execute a script file" );
@@ -1280,6 +1290,7 @@ int EXPORT Host_Main( int argc, const char **argv, const char *progname, int bCh
 	host_framerate = Cvar_Get( "host_framerate", "0", CVAR_ARCHIVE, "locks frame timing to this value in seconds" );  
 	host_serverstate = Cvar_Get( "host_serverstate", "0", CVAR_INIT, "displays current server state" );
 	host_gameloaded = Cvar_Get( "host_gameloaded", "0", CVAR_INIT, "indicates a loaded game library" );
+	host_menuloaded = Cvar_Get( "host_menuloaded", "0", CVAR_INIT, "indicates a loaded menu library" );
 	host_clientloaded = Cvar_Get( "host_clientloaded", "0", CVAR_INIT, "indicates a loaded client library" );
 	host_limitlocal = Cvar_Get( "host_limitlocal", "0", 0, "apply cl_cmdrate and rate to loopback connection" );
 	con_gamemaps = Cvar_Get( "con_mapfilter", "1", CVAR_ARCHIVE, "when enabled, show only maps in game folder (no maps from base folder when running mod)" );
@@ -1339,7 +1350,7 @@ int EXPORT Host_Main( int argc, const char **argv, const char *progname, int bCh
 	switch( host.type )
 	{
 	case HOST_NORMAL:
-#ifdef XASH_W32CON
+#ifdef _WIN32
 		Wcon_ShowConsole( false ); // hide console
 #endif
 
@@ -1365,8 +1376,6 @@ int EXPORT Host_Main( int argc, const char **argv, const char *progname, int bCh
 	{
 		Cmd_AddCommand( "quit", Sys_Quit, "quit the game" );
 		Cmd_AddCommand( "exit", Sys_Quit, "quit the game" );
-
-		SV_InitGameProgs();
 
 		Cbuf_AddText( "exec config.cfg\n" );
 
@@ -1485,7 +1494,7 @@ void EXPORT Host_Shutdown( void )
 	Cmd_Shutdown();
 	Host_FreeCommon();
 	Sys_DestroyConsole();
-	Sys_CloseLog();
 	Sys_RestoreCrashHandler();
 
+	Sys_CloseLog();
 }

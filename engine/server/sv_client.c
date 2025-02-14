@@ -195,15 +195,21 @@ void SV_CleanupClient( sv_client_t *cl, qboolean full )
 {
 	if( cl->frames )
 		Mem_Free( cl->frames );	// fakeclients doesn't have frames
+	cl->frames = NULL;
 
 	SV_ClearCustomizationList( &cl->customization );
+
+	// clean up all the penalties the old client might had
+	cl->fullupdate_next_calltime = 0;
+	cl->userinfo_next_changetime = 0;
+	cl->userinfo_penalty = 0;
+	cl->userinfo_change_attempts = 0;
 
 	if( full )
 	{
 		Q_memset( cl, '\0', sizeof( sv_client_t ) );
 	} else {
 
-	cl->frames = NULL;
 	cl->fakeclient = false;
 	cl->hltv_proxy = false;
 	cl->state = cs_zombie; // become free in a few seconds
@@ -2197,7 +2203,9 @@ void SV_Begin_f( sv_client_t *cl )
 		return;
 	}
 
+	// now client is spawned
 	SV_PutClientInServer( cl );
+	cl->last_cmdtime = host.realtime;
 
 	// if we are paused, tell the client
 	if( sv.paused )
@@ -2305,6 +2313,32 @@ static qboolean SV_ShouldUpdateUserinfo( sv_client_t *cl )
 
 /*
 =================
+SV_ValidatePlayerModel
+
+=================
+*/
+static qboolean SV_ValidatePlayerModel( const char *model )
+{
+	if( !model || !model[0] )
+		return false;
+
+	if( Q_strlen( model ) <= 1 )
+		return false;
+
+	if( Q_strstr( model, " " ) )
+		return false;
+
+	if( Q_strstr( model, "." ) )
+		return false;
+
+	if( Q_strstr( model, "/" ) || Q_strstr( model, "\\" ) )
+		return false;
+
+	return true;
+}
+
+/*
+=================
 SV_UserinfoChanged
 
 Pull specific info from a newly changed userinfo string
@@ -2393,11 +2427,11 @@ static void SV_UserinfoChanged( sv_client_t *cl, const char *userinfo )
 	else cl->netchan.rate = DEFAULT_RATE;
 
 	// msg command
-	val = Info_ValueForKey( cl->userinfo, "msg" );
+	val = Info_ValueForKey( cl->userinfo, "cl_msglevel" );
 	if( Q_strlen( val )) cl->messagelevel = Q_atoi( val );
 
 	cl->hltv_proxy = Q_atoi( Info_ValueForKey( cl->userinfo, "hltv" ));
-
+	cl->movement_prediction = Q_atoi( Info_ValueForKey( cl->userinfo, "cl_predict" ) ) ? true : false;
 	cl->local_weapons = Q_atoi( Info_ValueForKey( cl->userinfo, "cl_lw" )) ? true : false;
 	cl->lag_compensation = Q_atoi( Info_ValueForKey( cl->userinfo, "cl_lc" )) ? true : false;
 
@@ -2430,8 +2464,12 @@ static void SV_UserinfoChanged( sv_client_t *cl, const char *userinfo )
 
 	model = Info_ValueForKey( cl->userinfo, "model" );
 
+	// Force player model to "player"
+	if( !SV_ValidatePlayerModel( model ) )
+		Info_SetValueForKey( cl->userinfo, "model", "player", sizeof( cl->userinfo ) );
+
 	// apply custom playermodel
-	if( Q_strlen( model ) && Q_stricmp( model, "player" ))
+	if( Q_stricmp( model, "player" ))
 	{
 		const char *path = va( "models/player/%s/%s.mdl", model, model );
 		if( FS_FileExists( path, false ))
@@ -2444,10 +2482,9 @@ static void SV_UserinfoChanged( sv_client_t *cl, const char *userinfo )
 	}
 	else cl->modelindex = 0;
 
-	// Force reset player model to "player"
-	if( cl->modelindex == 0 || !model || !model[0] )
+	// Didnt find custom playermodel on the server, use "player"
+	if( cl->modelindex == 0 )
 	{
-		Info_SetValueForKey( cl->userinfo, "model", "player", sizeof( cl->userinfo ) );
 		Mod_RegisterModel( "models/player.mdl", SV_ModelIndex( "models/player.mdl" ));
 		SV_SetModel( ent, "models/player.mdl" );
 	}
@@ -2565,6 +2602,58 @@ void SV_Fullupdate_f( sv_client_t *cl )
 
 	if( sv_fullupdate_enable_penalty->value )
 		cl->fullupdate_next_calltime = host.realtime + sv_fullupdate_penalty_time->value;
+}
+
+/*
+================
+SV_ServerStatus_f
+================
+*/
+void SV_ServerStatus_f( sv_client_t *cl )
+{
+	int			i, clients, bots;
+	float		fps;
+	sv_client_t	*client;
+	edict_t		*ent;
+
+	// Silently abort
+	if ( !cl || !SV_IsValidEdict( cl->edict ) )
+		return;
+
+	ent = EDICT_NUM( 0 ); // worldspawn
+	fps = (1.0 / host.frametime);
+
+	SV_GetPlayerCount( &clients, &bots );
+
+	SV_ClientPrintf( cl, PRINT_LOW, "hostname: %s\n", hostname->string );
+	SV_ClientPrintf( cl, PRINT_LOW, "players: %i (max %i)\n", clients, sv_maxclients->integer );
+	SV_ClientPrintf( cl, PRINT_LOW, "map: %s (x %.f y %.f z %.f)\n", sv.name, ent->v.origin[0], ent->v.origin[1], ent->v.origin[2] );
+	SV_ClientPrintf( cl, PRINT_LOW, "num score ping    name                            \n" );
+	SV_ClientPrintf( cl, PRINT_LOW, "--- ----- ------- --------------------------------\n" );
+
+	for( i = 0, client = svs.clients; i < sv_maxclients->integer; i++, client++ )
+	{
+		int	ping;
+
+		if( !client->state ) continue;
+
+		SV_ClientPrintf( cl, PRINT_LOW, "%3i ", client->userid );
+		SV_ClientPrintf( cl, PRINT_LOW, "%5i ", (int)client->edict->v.frags );
+
+		if( client->state == cs_connected ) SV_ClientPrintf( cl, PRINT_LOW, "Connect" );
+		else if( client->state == cs_zombie ) SV_ClientPrintf( cl, PRINT_LOW, "Zombie " );
+		else if( client->fakeclient ) SV_ClientPrintf( cl, PRINT_LOW, "Bot   " );
+		else if( client->netchan.remote_address.type == NA_LOOPBACK ) SV_ClientPrintf( cl, PRINT_LOW, "Local ");
+		else
+		{
+			ping = min( client->ping, 9999 );
+			SV_ClientPrintf( cl, PRINT_LOW, "%7i ", ping );
+		}
+
+		SV_ClientPrintf( cl, PRINT_LOW, "%s", client->name );
+		SV_ClientPrintf( cl, PRINT_LOW, "\n" );
+	}
+	SV_ClientPrintf( cl, PRINT_LOW, "\n" );
 }
 
 /*
@@ -2891,6 +2980,7 @@ void SV_EntInfo_f( sv_client_t *cl )
 	if( ent->v.solid )
 		SV_ClientPrintf( cl, PRINT_LOW, "solid: %d\n", ent->v.solid );
 
+	SV_ClientPrintf( cl, PRINT_LOW, "effects: 0x%x\n", ent->v.effects );
 	SV_ClientPrintf( cl, PRINT_LOW, "flags: 0x%x\n", ent->v.flags );
 	SV_ClientPrintf( cl, PRINT_LOW, "spawnflags: 0x%x\n", ent->v.spawnflags );
 }
@@ -3417,6 +3507,7 @@ ucmd_t ucmds[] =
 { "continueloading", SV_ContinueLoading_f },
 { "kill", SV_Kill_f },
 { "fullupdate", SV_Fullupdate_f },
+{ "status", SV_ServerStatus_f },
 { "_sv_build_info", SV_SendBuildInfo_f },
 { NULL, NULL }
 };
@@ -3710,15 +3801,17 @@ static void SV_ParseClientMove( sv_client_t *cl, sizebuf_t *msg )
 	}
 
 	cl->lastcmd = cmds[0];
-	cl->lastcmd.buttons = 0; // avoid multiple fires on lag
 
 	// adjust latency time by 1/2 last client frame since
 	// the message probably arrived 1/2 through client's frame loop
-	frame->latency -= cl->lastcmd.msec * 0.5f / 1000.0f;
-	frame->latency = max( 0.0f, frame->latency );
+	if( cl->frames )
+	{
+		frame->latency -= cl->lastcmd.msec * 0.5f / 1000.0f;
+		frame->latency = max( 0.0f, frame->latency );
+	}
 
-	if( player->v.animtime > sv.time + host.frametime )
-		player->v.animtime = sv.time + host.frametime;
+	if( player->v.animtime > svgame.globals->time + host.frametime )
+		player->v.animtime = svgame.globals->time + host.frametime;
 }
 
 /*

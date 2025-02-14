@@ -23,6 +23,21 @@ GNU General Public License for more details.
 
 /*
 ==============
+COM_IsSingleChar
+interpert this character as single
+==============
+*/
+static int COM_IsSingleChar( char c )
+{
+	if( c == '{' || c == '}' || c == ')' || c == '(' || c == '\'' || c == ',' )
+		return true;
+	if( host.com_handlecolon && c == ':' )
+		return true;
+	return false;
+}
+
+/*
+==============
 COM_ParseFile
 
 text parser
@@ -90,7 +105,7 @@ skipwhite:
 	}
 
 	// parse single characters
-	if( c == '{' || c == '}' || c == ')' || c == '(' || c == '\'' || c == ',' )
+	if( COM_IsSingleChar( c ) )
 	{
 		token[len] = c;
 		len++;
@@ -106,7 +121,7 @@ skipwhite:
 		len++;
 		c = ((byte)*data);
 
-		if( c == '{' || c == '}' || c == ')' || c == '(' || c == '\'' || c == ',' )
+		if( COM_IsSingleChar( c ) )
 			break;
 	} while( c > 32 );
 
@@ -490,7 +505,7 @@ void GAME_EXPORT Con_Printf( char *szFmt, ... )
 	static char	buffer[16384];	// must support > 1k messages
 	va_list		args;
 
-	if( host_developer <= 0 )
+	if( host_developer->value <= 0 )
 		return;
 
 	va_start( args, szFmt );

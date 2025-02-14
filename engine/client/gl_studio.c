@@ -30,7 +30,7 @@ GNU General Public License for more details.
 #define STUDIO_MERGE_TEXTURES
 
 #define EVENT_CLIENT	5000	// less than this value it's a server-side studio events
-#define MAXARRAYVERTS	20000	// used for draw shadows
+#define MAXARRAYVERTS	32768	// used for draw shadows
 #define LEGS_BONES_COUNT	8
 
 static vec3_t hullcolor[8] = 
@@ -655,11 +655,7 @@ mstudioanim_t *R_StudioGetAnim( model_t *m_pSubModel, mstudioseqdesc_t *pseqdesc
 
 	pseqgroup = (mstudioseqgroup_t *)((byte *)m_pStudioHeader + m_pStudioHeader->seqgroupindex) + pseqdesc->seqgroup;
 	if( pseqdesc->seqgroup == 0 )
-#ifdef XASH_64BIT
 		return (mstudioanim_t *)((byte *)m_pStudioHeader + pseqdesc->animindex);
-#else
-		return (mstudioanim_t *)((byte *)m_pStudioHeader + pseqgroup->data + pseqdesc->animindex);
-#endif
 
 	paSequences = (cache_user_t *)m_pSubModel->submodels;
 
@@ -2831,18 +2827,18 @@ static model_t *GAME_EXPORT R_StudioSetupPlayerModel( int index )
 	player_info_t	*info;
 	string		modelpath;
 
-	if( cls.key_dest == key_menu && !index )
+	if( index < 0 || index > cl.maxclients )
+		return NULL; // bad client ?
+
+	if( !RI.drawWorld )
 	{
 		// we are in menu.
 		info = &menu.playerinfo;
 	}
 	else
 	{
-		if( index < 0 || index > cl.maxclients )
-			return NULL; // bad client ?
 		info = &cl.players[index];
 	}
-
 
 	// set to invisible, skip
 	if( !info->model[0] ) return NULL;
@@ -3729,7 +3725,10 @@ R_RunViewmodelEvents
 */
 void R_RunViewmodelEvents( void )
 {
-	if( cl.refdef.nextView || cl.thirdperson || RI.params & RP_NONVIEWERREF )
+	if( r_drawviewmodel->integer == 0 )
+		return;
+
+	if( cl.refdef.nextView || cl.thirdperson || cl.refdef.health <= 0 || RI.params & RP_NONVIEWERREF )
 		return;
 
 	if( !Mod_Extradata( clgame.viewent.model ))

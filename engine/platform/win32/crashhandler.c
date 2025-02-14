@@ -33,7 +33,7 @@ Crash handler, called from system
 typedef ULONG_PTR DWORD_PTR, *PDWORD_PTR;
 #endif
 
-int ModuleName( HANDLE process, char *name, void *address, int len )
+static int Sys_ModuleName( HANDLE process, char *name, void *address, int len )
 {
 	DWORD_PTR   baseAddress = 0;
 	static HMODULE     *moduleArray;
@@ -75,7 +75,7 @@ int ModuleName( HANDLE process, char *name, void *address, int len )
 }
 static void stack_trace( PEXCEPTION_POINTERS pInfo )
 {
-	char message[1024];
+	char message[4096]; // match posix crashhandler
 	int len = 0;
 	size_t i;
 	HANDLE process = GetCurrentProcess();
@@ -126,18 +126,18 @@ static void stack_trace( PEXCEPTION_POINTERS pInfo )
 	stackframe.AddrStack.Offset = context.IntSp;
 	stackframe.AddrStack.Mode = AddrModeFlat;
 #endif
-	len += Q_snprintf( message + len, 1024 - len, "Sys_Crash: address %p, code %p\n", pInfo->ExceptionRecord->ExceptionAddress, (void*)pInfo->ExceptionRecord->ExceptionCode );
+	len += Q_snprintf( message + len, 4096 - len, "Sys_Crash: address %p, code %p\n", pInfo->ExceptionRecord->ExceptionAddress, (void*)pInfo->ExceptionRecord->ExceptionCode );
 	if( SymGetLineFromAddr64( process, (DWORD64)pInfo->ExceptionRecord->ExceptionAddress, &dline, &line ) )
 	{
-		len += Q_snprintf(message + len, 1024 - len,"Exception: %s:%d:%d\n", (char*)line.FileName, (int)line.LineNumber, (int)dline);
+		len += Q_snprintf(message + len, 4096 - len,"Exception: %s:%d:%d\n", (char*)line.FileName, (int)line.LineNumber, (int)dline);
 	}
 	if( SymGetLineFromAddr64( process, stackframe.AddrPC.Offset, &dline, &line ) )
 	{
-		len += Q_snprintf(message + len, 1024 - len,"PC: %s:%d:%d\n", (char*)line.FileName, (int)line.LineNumber, (int)dline);
+		len += Q_snprintf(message + len, 4096 - len,"PC: %s:%d:%d\n", (char*)line.FileName, (int)line.LineNumber, (int)dline);
 	}
 	if( SymGetLineFromAddr64( process, stackframe.AddrFrame.Offset, &dline, &line ) )
 	{
-		len += Q_snprintf(message + len, 1024 - len,"Frame: %s:%d:%d\n", (char*)line.FileName, (int)line.LineNumber, (int)dline);
+		len += Q_snprintf(message + len, 4096 - len,"Frame: %s:%d:%d\n", (char*)line.FileName, (int)line.LineNumber, (int)dline);
 	}
 	for( i = 0; i < 25; i++ )
 	{
@@ -156,18 +156,18 @@ static void stack_trace( PEXCEPTION_POINTERS pInfo )
 		symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
 		symbol->MaxNameLen = MAX_SYM_NAME;
 
-		len += Q_snprintf( message + len, 1024 - len, "% 2d %p", i, (void*)stackframe.AddrPC.Offset );
+		len += Q_snprintf( message + len, 4096 - len, "% 2d %p", i, (void*)stackframe.AddrPC.Offset );
 		if( SymFromAddr( process, stackframe.AddrPC.Offset, &displacement, symbol ) )
 		{
-			len += Q_snprintf( message + len, 1024 - len, " %s ", symbol->Name );
+			len += Q_snprintf( message + len, 4096 - len, " %s ", symbol->Name );
 		}
 		if( SymGetLineFromAddr64( process, stackframe.AddrPC.Offset, &dline, &line ) )
 		{
-			len += Q_snprintf(message + len, 1024 - len,"(%s:%d:%d) ", (char*)line.FileName, (int)line.LineNumber, (int)dline);
+			len += Q_snprintf(message + len, 4096 - len,"(%s:%d:%d) ", (char*)line.FileName, (int)line.LineNumber, (int)dline);
 		}
-		len += Q_snprintf( message + len, 1024 - len, "(");
-		len += ModuleName( process, message + len, (void*)stackframe.AddrPC.Offset, 1024 - len );
-		len += Q_snprintf( message + len, 1024 - len, ")\n");
+		len += Q_snprintf( message + len, 4096 - len, "(");
+		len += Sys_ModuleName( process, message + len, (void*)stackframe.AddrPC.Offset, 4096 - len );
+		len += Q_snprintf( message + len, 4096 - len, ")\n");
 	}
 #ifdef XASH_SDL
 	if( host.type != HOST_DEDICATED ) // let system to restart server automaticly
@@ -187,7 +187,11 @@ long _stdcall Sys_Crash( PEXCEPTION_POINTERS pInfo )
 		// check to avoid recursive call
 		host.crashed = true;
 
-		Sys_Warn( "Sys_Crash: call %p at address %p", pInfo->ExceptionRecord->ExceptionAddress, pInfo->ExceptionRecord->ExceptionCode );
+		// release the mouse
+#ifdef XASH_SDL
+		SDL_SetWindowGrab( host.hWnd, SDL_FALSE );
+#endif // XASH_SDL
+
 		stack_trace( pInfo );
 
 		if( host.type == HOST_NORMAL )

@@ -242,6 +242,8 @@ void DBG_AssertFunction( qboolean fExpr, const char* szExpr, const char* szFile,
 #define Assert( f )
 #endif
 
+extern int g_developer; // developer value before cvars are accessable
+
 extern convar_t	*scr_width;
 extern convar_t	*scr_height;
 extern convar_t	*scr_loading;
@@ -394,6 +396,9 @@ typedef struct host_redirect_s
 	int lines;
 } host_redirect_t;
 
+// local flags (never sending acorss the net)
+#define SND_FILTER_CLIENT (1U << 11) // don't send sound from local player if prediction was enabled
+
 typedef struct
 {
 	char		name[64];
@@ -441,6 +446,7 @@ typedef struct host_parm_s
 	qboolean		key_overstrike;	// key overstrike mode
 	qboolean		stuffcmdsrun;	// execute stuff commands
 	qboolean		con_showalways;	// show console always (developer and dedicated)
+	qboolean		com_handlecolon; // allow COM_ParseFile to handle colon as single char
 	qboolean		change_game;	// initialize when game is changed
 	qboolean		mouse_visible;	// vgui override cursor control
 	qboolean		shutdown_issued;	// engine is shutting down
@@ -547,10 +553,11 @@ void FS_CreatePath( char *path );
 void NET_Init( void );
 void NET_Shutdown( void );
 void NET_Config( qboolean net_enable, qboolean changeport );
-qboolean NET_IsLocalAddress( netadr_t adr );
+
 qboolean NET_IsLanAddress( netadr_t adr );
 char *NET_AdrToString( const netadr_t a );
 char *NET_BaseAdrToString( const netadr_t a );
+int NET_StringToSockaddr( const char *s, struct sockaddr *sadr, qboolean nonblocking );
 qboolean NET_StringToAdr( const char *string, netadr_t *adr );
 int NET_StringToAdrNB( const char *string, netadr_t *adr );
 qboolean NET_CompareAdr( const netadr_t a, const netadr_t b );
@@ -558,6 +565,10 @@ qboolean NET_CompareBaseAdr( const netadr_t a, const netadr_t b );
 qboolean NET_GetPacket( netsrc_t sock, netadr_t *from, byte *data, size_t *length );
 void NET_SendPacket( netsrc_t sock, size_t length, const void *data, netadr_t to );
 
+xash_force_inline qboolean NET_IsLocalAddress( netadr_t adr )
+{
+	return adr.type == NA_LOOPBACK;
+}
 
 //
 // masterlist.c
@@ -1055,6 +1066,7 @@ void SCR_CheckStartupVids( void );
 int SCR_GetAudioChunk( char *rawdata, int length );
 wavdata_t *SCR_GetMovieInfo( void );
 void SCR_Shutdown( void );
+void Con_Init( void );
 void Con_Print( const char *txt );
 void Rcon_Print( const char *pMsg );
 void Con_NPrintf( int idx, char *fmt, ... ) _format(2);
@@ -1089,7 +1101,9 @@ int CSCR_LoadDefaultCVars( const char *scriptfilename );
 int CSCR_WriteGameCVars( file_t *cfg, const char *scriptfilename );
 void Com_EscapeCommand( char *newCommand, const char *oldCommand, int len );
 
-
+//
+// net_http.c
+//
 void HTTP_AddDownload( char *path, int size, qboolean process );
 void HTTP_ResetProcessState ( void );
 void HTTP_Init( void );
@@ -1097,6 +1111,8 @@ void HTTP_Shutdown( void );
 void HTTP_Run( void );
 void HTTP_ClearCustomServers( void );
 void HTTP_Clear_f( void );
+qboolean HTTP_IsSafeFileToDownload( const char *filename );
+
 void CL_ProcessFile( qboolean successfully_received, const char *filename );
 
 typedef struct autocomplete_list_s

@@ -153,7 +153,7 @@ qboolean Sys_DebuggerPresent( void )
 #elif defined(_WIN32)
 
 #ifdef _MSC_VER
-BOOL WINAPI IsDebuggerPresent(void);
+WINBASEAPI BOOL WINAPI IsDebuggerPresent( void );
 #define DEBUG_BREAK	if( IsDebuggerPresent() ) \
 		__debugbreak( );
 #else
@@ -616,10 +616,6 @@ void Sys_WaitForQuit( void )
 #ifdef _WIN32
 	MSG	msg;
 
-#ifdef XASH_W32CON
-	Wcon_RegisterHotkeys();
-#endif
-
 	msg.message = 0;
 
 	// wait for the user to quit
@@ -669,6 +665,7 @@ void Sys_Error( const char *format, ... )
 {
 	va_list	argptr;
 	char text[4096];
+	int devlevel = host_developer != NULL ? host_developer->integer : g_developer;
 
 	DEBUG_BREAK;
 
@@ -693,9 +690,9 @@ void Sys_Error( const char *format, ... )
 #endif
 	}
 
-	if( host_developer->integer > 0 || host.state != HOST_FRAME )
+	if( devlevel > 0 || host.state != HOST_FRAME )
 	{
-#ifdef XASH_W32CON
+#ifdef _WIN32
 		Wcon_ShowConsole( true );
 		Wcon_DisableInput();	// disable input line for dedicated server
 #endif
@@ -705,7 +702,7 @@ void Sys_Error( const char *format, ... )
 	}
 	else
 	{
-#ifdef XASH_W32CON
+#ifdef _WIN32
 		Wcon_ShowConsole( false );
 #endif
 		MSGBOX( text );
@@ -725,6 +722,8 @@ void Sys_Break( const char *format, ... )
 {
 	va_list	argptr;
 	char	text[MAX_SYSPATH];
+	int devlevel = host_developer != NULL ? host_developer->integer : g_developer;
+
 	DEBUG_BREAK;
 	if( host.state == HOST_ERR_FATAL )
 		return; // don't multiple executes
@@ -742,9 +741,9 @@ void Sys_Break( const char *format, ... )
 #endif
 	}
 
-	if( Host_IsDedicated( ) || host_developer->integer > 0 )
+	if( Host_IsDedicated() || devlevel > 0 )
 	{
-#ifdef XASH_W32CON
+#ifdef _WIN32
 		Wcon_ShowConsole( true );
 		Wcon_DisableInput();	// disable input line for dedicated server
 #endif
@@ -754,7 +753,7 @@ void Sys_Break( const char *format, ... )
 	}
 	else
 	{
-#ifdef XASH_W32CON
+#ifdef _WIN32
 		Wcon_ShowConsole( false );
 #endif
 		MSGBOX( text );
@@ -786,11 +785,12 @@ print into window console
 */
 void Sys_Print( const char *pMsg )
 {
+#if !defined( XASH_DEDICATED )
 	if( !Host_IsDedicated() )
 		Con_Print( pMsg );
+#endif
 
-#ifdef XASH_W32CON
-
+#ifdef _WIN32
 	{
 		const char	*msg;
 		char		buffer[32768];
@@ -831,12 +831,10 @@ void Sys_Print( const char *pMsg )
 			{
 				i++; // skip console pseudo graph
 			}
-			else if( IsColorString( &msg[i] ))
-			{
-				i++; // skip color prefix
-			}
 			else
 			{
+				if( msg[i] == '\1' || msg[i] == '\2' || msg[i] == '\3' )
+					i++;
 				*b = *c = msg[i];
 				b++, c++;
 			}
@@ -845,12 +843,11 @@ void Sys_Print( const char *pMsg )
 
 		*b = *c = 0; // cutoff garbage
 
-		Sys_PrintLog( logbuf );
-		Wcon_Print( buffer );
+		Wcon_WinPrint( buffer );
 	}
-#else
-	Sys_PrintLog( pMsg );
 #endif
+
+	Sys_PrintLog( pMsg );
 	Rcon_Print( pMsg );
 }
 
@@ -884,8 +881,9 @@ void MsgDev( int level, const char *pMsg, ... )
 {
 	va_list	argptr;
 	char	text[8192];
+	int devlevel = host_developer != NULL ? host_developer->integer : g_developer;
 
-	if( host_developer->integer < level ) return;
+	if( devlevel < level ) return;
 
 	va_start( argptr, pMsg );
 	Q_vsnprintf( text, sizeof( text ), pMsg, argptr );

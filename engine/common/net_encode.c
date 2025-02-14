@@ -431,8 +431,12 @@ qboolean Delta_AddField( const char *pStructName, const char *pName, int flags, 
 	{
 		if( !Q_strcmp( pField->name, pName ))
 		{
-			MsgDev( D_NOTE, "Delta_Add: %s->%s already existing\n", pStructName, pName );
-			return false; // field already exist		
+			// update existed field
+			pField->flags = flags;
+			pField->bits = bits;
+			pField->multiplier = mul;
+			pField->post_multiplier = post_mul;
+			return true;
 		}
 	}
 
@@ -531,9 +535,6 @@ void Delta_ParseTableField( sizebuf_t *msg )
 
 	if( BF_ReadOneBit( msg ))
 		post_mul = BF_ReadFloat( msg );
-
-	// delta encoders it's already initialized on this machine (local game)
-	if( delta_init ) return;
 
 	// add field to table
 	Delta_AddField( dt->pName, pName, flags, bits, mul, post_mul );

@@ -234,7 +234,7 @@ qboolean SV_PlayerRunThink( edict_t *ent, float frametime, double time )
 		if( thinktime <= 0.0f || thinktime > time + frametime )
 			return true;
 
-		if( thinktime > time )
+		if( thinktime < time )
 			thinktime = time;
 
 		ent->v.nextthink = 0.0f;

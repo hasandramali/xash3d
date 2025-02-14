@@ -318,6 +318,9 @@ void SV_CheckCmdTimes( void )
 	double		timewindow;
 	int		i;
 
+	if( Host_IsLocalGame() )
+		return;
+
 	if(( host.realtime - lastreset ) < 1.0 )
 		return;
 
@@ -454,7 +457,7 @@ void SV_ReadPackets( void )
 					cl->send_message = true; // reply at end of frame
 
 				// this is a valid, sequenced packet, so process it
-				if( cl->state != cs_zombie )
+				if( cl->frames != NULL && cl->state != cs_zombie )
 				{
 					cl->lastmessage = host.realtime; // don't timeout
 					SV_ExecuteClientMessage( cl, &net_message );
@@ -469,7 +472,11 @@ void SV_ReadPackets( void )
 				if( Netchan_CopyNormalFragments( &cl->netchan, &net_message ))
 				{
 					BF_Clear( &net_message );
-					SV_ExecuteClientMessage( cl, &net_message );
+
+					if( cl->frames != NULL && cl->state != cs_zombie )
+					{
+						SV_ExecuteClientMessage( cl, &net_message );
+					}
 				}
 
 				if( Netchan_CopyFileFragments( &cl->netchan, &net_message ))
@@ -944,6 +951,8 @@ void SV_Init( void )
 	SV_InitFilter();
 	SV_ClearSaveDir ();	// delete all temporary *.hl files
 	BF_Init( &net_message, "NetMessage", net_message_buffer, sizeof( net_message_buffer ));
+
+	SV_InitGameProgs( );
 }
 
 /*
