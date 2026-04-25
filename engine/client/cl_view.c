@@ -28,45 +28,33 @@ GNU General Public License for more details.
 /*
 ===============
 V_CalcViewRect
-<<<<<<< HEAD
-=======
 
->>>>>>> upstream/master
 calc frame rectangle (Quake1 style)
 ===============
 */
 void V_CalcViewRect( void )
 {
 	int	size, sb_lines;
-<<<<<<< HEAD
-=======
 
->>>>>>> upstream/master
 	if( scr_viewsize->integer >= 120 )
 		sb_lines = 0;		// no status bar at all
 	else if( scr_viewsize->integer >= 110 )
 		sb_lines = 24;		// no inventory
 	else sb_lines = 48;
-<<<<<<< HEAD
 	size = min( scr_viewsize->integer, 100 );
 	cl.refdef.viewport[2] = scr_width->integer * size / 100;
 	cl.refdef.viewport[3] = scr_height->integer * size / 100;
-=======
 
 	size = min( scr_viewsize->integer, 100 );
 
 	cl.refdef.viewport[2] = scr_width->integer * size / 100;
 	cl.refdef.viewport[3] = scr_height->integer * size / 100;
 
->>>>>>> upstream/master
 	if( cl.refdef.viewport[3] > scr_height->integer - sb_lines )
 		cl.refdef.viewport[3] = scr_height->integer - sb_lines;
 	if( cl.refdef.viewport[3] > scr_height->integer )
 		cl.refdef.viewport[3] = scr_height->integer;
-<<<<<<< HEAD
-=======
 
->>>>>>> upstream/master
 	cl.refdef.viewport[0] = ( scr_width->integer - cl.refdef.viewport[2] ) / 2;
 	cl.refdef.viewport[1] = ( scr_height->integer - sb_lines - cl.refdef.viewport[3] ) / 2;
 }
@@ -251,7 +239,6 @@ void V_MergeOverviewRefdef( ref_params_t *fd )
 	Mod_SetOrthoBounds( mins, maxs );
 }
 
-<<<<<<< HEAD
 typedef struct
 {
 	qboolean valid;
@@ -447,8 +434,6 @@ void FirstPerson( )
 	}
 }
 
-=======
->>>>>>> upstream/master
 /*
 ===============
 V_CalcRefDef

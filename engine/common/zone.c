@@ -482,8 +482,5 @@ Memory_Init
 void Memory_Init( void )
 {
 	poolchain = NULL; // init mem chain
-<<<<<<< HEAD
 }
-=======
 }
->>>>>>> upstream/master

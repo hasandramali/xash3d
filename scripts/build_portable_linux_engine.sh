@@ -1,5 +1,3 @@
-<<<<<<< HEAD
-=======
 #!/bin/bash
 
 # Build custom SDL2
@@ -39,7 +37,6 @@ make -j2
 mkdir -p $TRAVIS_BUILD_DIR/sdl2-linux
 make install DESTDIR=$TRAVIS_BUILD_DIR/sdl2-linux
 
->>>>>>> upstream/master
 # Build engine
 
 mkdir -p build && cd build/

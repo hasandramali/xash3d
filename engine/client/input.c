@@ -68,11 +68,9 @@ convar_t *cl_sidespeed;
 convar_t *cl_backspeed;
 convar_t *look_filter;
 /*
-=======
 Host_MapKey
 
 Map from windows to engine keynums
-=======
 */
 static int Host_MapKey( int key )
 {

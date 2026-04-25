@@ -24,10 +24,7 @@ GNU General Public License for more details.
 /*
 ==============
 COM_IsSingleChar
-<<<<<<< HEAD
-=======
 
->>>>>>> upstream/master
 interpert this character as single
 ==============
 */
@@ -35,15 +32,12 @@ static int COM_IsSingleChar( char c )
 {
 	if( c == '{' || c == '}' || c == ')' || c == '(' || c == '\'' || c == ',' )
 		return true;
-<<<<<<< HEAD
 	if( host.com_handlecolon && c == ':' )
 		return true;
-=======
 
 	if( host.com_handlecolon && c == ':' )
 		return true;
 
->>>>>>> upstream/master
 	return false;
 }
 
@@ -519,12 +513,9 @@ void GAME_EXPORT Con_Printf( char *szFmt, ... )
 	static char	buffer[16384];	// must support > 1k messages
 	va_list		args;
 
-<<<<<<< HEAD
 	if( host_developer->value <= 0 )
 		return;
 
-=======
->>>>>>> upstream/master
 	va_start( args, szFmt );
 	Q_vsnprintf( buffer, sizeof( buffer ), szFmt, args );
 	va_end( args );

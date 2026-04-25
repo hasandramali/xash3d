@@ -3146,27 +3146,21 @@ static void GAME_EXPORT pfnSetLightmapScale( float scale )
 /*
 =============
 pfnParseFile
-<<<<<<< HEAD
-=======
 
->>>>>>> upstream/master
 handle colon separately
 =============
 */
 static char GAME_EXPORT *pfnParseFile( char *data, char *token )
 {
 	char *out;
-<<<<<<< HEAD
 	host.com_handlecolon = true;
 	out = COM_ParseFile( data, token );
 	host.com_handlecolon = false;
-=======
 
 	host.com_handlecolon = true;
 	out = COM_ParseFile( data, token );
 	host.com_handlecolon = false;
 
->>>>>>> upstream/master
 	return out;
 }
 

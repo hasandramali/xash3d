@@ -457,10 +457,7 @@ CLIENT MOVEMENT COMMUNICATION
 /*
 ===============
 CL_ProcessShowTexturesCmds
-<<<<<<< HEAD
-=======
 
->>>>>>> upstream/master
 navigate around texture atlas
 ===============
 */
@@ -469,13 +466,11 @@ qboolean CL_ProcessShowTexturesCmds( usercmd_t *cmd )
 	static int oldbuttons;
 	int changed;
 	int pressed, released;
-<<<<<<< HEAD
 	if ( !gl_showtextures->integer || gl_overview->integer )
 		return false;
 	changed  = ( oldbuttons ^ cmd->buttons );
 	pressed  = changed & cmd->buttons;
 	released = changed & ( ~cmd->buttons );
-=======
 
 	if ( !gl_showtextures->integer || gl_overview->integer )
 		return false;
@@ -484,19 +479,16 @@ qboolean CL_ProcessShowTexturesCmds( usercmd_t *cmd )
 	pressed  = changed & cmd->buttons;
 	released = changed & ( ~cmd->buttons );
 
->>>>>>> upstream/master
 	if ( released & ( IN_RIGHT | IN_MOVERIGHT ) )
 		Cvar_SetFloat( "r_showtextures", gl_showtextures->integer + 1 );
 	if ( released & ( IN_LEFT | IN_MOVELEFT ) )
 		Cvar_SetFloat( "r_showtextures", max( 1, gl_showtextures->integer - 1 ) );
 	oldbuttons = cmd->buttons;
-<<<<<<< HEAD
 	return true;
 }
 /*
 ===============
 CL_ProcessOverviewCmds
-=======
 
 	return true;
 }
@@ -505,7 +497,6 @@ CL_ProcessOverviewCmds
 ===============
 CL_ProcessOverviewCmds
 
->>>>>>> upstream/master
 Transform user movement into overview adjust
 ===============
 */
@@ -516,12 +507,10 @@ qboolean CL_ProcessOverviewCmds( usercmd_t *cmd )
 	float size         = world.size[!ov->rotated] / world.size[ov->rotated];
 	float step         = ( 2.0f / size ) * host.realframetime;
 	float step2        = step * 100.0f * ( 2.0f / ov->flZoom );
-<<<<<<< HEAD
 	if ( !gl_overview->integer || gl_showtextures->integer )
 		return false;
 	if ( ov->flZoom < 0.0f )
 		sign = -1;
-=======
 
 	if ( !gl_overview->integer || gl_showtextures->integer )
 		return false;
@@ -529,31 +518,21 @@ qboolean CL_ProcessOverviewCmds( usercmd_t *cmd )
 	if ( ov->flZoom < 0.0f )
 		sign = -1;
 
->>>>>>> upstream/master
 	if ( cmd->upmove > 0.0f )
 		ov->zNear += step;
 	else if ( cmd->upmove < 0.0f )
 		ov->zNear -= step;
-<<<<<<< HEAD
-=======
 
->>>>>>> upstream/master
 	if ( cmd->buttons & IN_JUMP )
 		ov->zFar += step;
 	else if ( cmd->buttons & IN_DUCK )
 		ov->zFar -= step;
-<<<<<<< HEAD
-=======
 
->>>>>>> upstream/master
 	if ( cmd->buttons & IN_FORWARD )
 		ov->origin[ov->rotated] -= sign * step2;
 	else if ( cmd->buttons & IN_BACK )
 		ov->origin[ov->rotated] += sign * step2;
-<<<<<<< HEAD
-=======
 
->>>>>>> upstream/master
 	if ( ov->rotated )
 	{
 		if ( cmd->buttons & ( IN_RIGHT | IN_MOVERIGHT ) )
@@ -568,23 +547,17 @@ qboolean CL_ProcessOverviewCmds( usercmd_t *cmd )
 		else if ( cmd->buttons & ( IN_LEFT | IN_MOVELEFT ) )
 			ov->origin[1] -= sign * step2;
 	}
-<<<<<<< HEAD
-=======
 
->>>>>>> upstream/master
 	if ( cmd->buttons & IN_ATTACK )
 		ov->flZoom += step;
 	else if ( cmd->buttons & IN_ATTACK2 )
 		ov->flZoom -= step;
-<<<<<<< HEAD
 	if ( ov->flZoom == 0.0f )
 		ov->flZoom = 0.0001f; // to prevent disivion by zero
-=======
 
 	if ( ov->flZoom == 0.0f )
 		ov->flZoom = 0.0001f; // to prevent disivion by zero
 
->>>>>>> upstream/master
 	return true;
 }
 
@@ -2568,11 +2541,8 @@ void CL_InitLocal( void )
 	Cvar_Get( "skin", "", CVAR_USERINFO, "player skin" ); // XDM 3.3 want this cvar
 	Cvar_Get( "cl_background", "0", CVAR_READ_ONLY, "indicates that background map is running" );
 	Cvar_Get( "cl_msglevel", "0", CVAR_USERINFO|CVAR_ARCHIVE, "message filter for server notifications" );
-<<<<<<< HEAD
 	Cvar_Get( "cl_seebehindwall", "0", 0, "See players behind the wall" );
-=======
 
->>>>>>> upstream/master
 	Cvar_Get( "cl_enable_compress", "0", CVAR_ARCHIVE, "request huffman compression from server" );
 	Cvar_Get( "cl_enable_split", "1", CVAR_ARCHIVE, "request packet split from server" );
 	Cvar_Get( "cl_enable_splitcompress", "0", CVAR_ARCHIVE, "request compressing all splitpackets" );
@@ -2649,18 +2619,15 @@ void CL_InitLocal( void )
 	Cmd_AddCommand ("precache", CL_Precache_f, "precache specified resource (by index)" );
 	Cmd_AddCommand ( "trysaveconfig", CL_TrySaveConfig_f, "schedule config save on disconnected state" );
 
-<<<<<<< HEAD
 		// these two added to shut up HL25 update about 'unknown' commands
 	Cmd_AddCommand ( "richpresence_gamemode", Cmd_Null_f, "compatibility command, does nothing" );
 	Cmd_AddCommand ( "richpresence_update", Cmd_Null_f, "compatibility command, does nothing" );
 	Cmd_AddCommand("xash3d_change_id", Xash3D_Change_ID, "Changes your XashID");
 	Cmd_AddCommand("xash3d_get_id", Xash3D_Get_ID, "See your XashID");
 	Cmd_AddCommand( "thirdperson_toggle", CL_ThirdPerson_f, "ThirdPerson ON/OFF" );
-=======
 	// these two added to shut up HL25 update about 'unknown' commands
 	Cmd_AddCommand ( "richpresence_gamemode", Cmd_Null_f, "compatibility command, does nothing" );
 	Cmd_AddCommand ( "richpresence_update", Cmd_Null_f, "compatibility command, does nothing" );
->>>>>>> upstream/master
 }
 
 //============================================================================

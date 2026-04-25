@@ -1164,11 +1164,8 @@ void CL_PredictMovement( void )
 
 	if( cls.demoplayback && cl.refdef.cmd != NULL )
 		CL_DemoInterpolateAngles();
-<<<<<<< HEAD
 
-=======
 	
->>>>>>> upstream/master
 	CL_SetUpPlayerPrediction( false, false );
 
 	// unpredicted pure angled values converted into axis

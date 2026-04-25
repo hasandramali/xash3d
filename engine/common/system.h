@@ -130,12 +130,9 @@ int Sys_LogFileNo( void );
 // con_win.c
 //
 void Wcon_ShowConsole( qboolean show );
-<<<<<<< HEAD
 void Wcon_RegisterHotkeys( void );
 void Wcon_Print( const char *pMsg );
 void Wcon_Init( void );
-=======
->>>>>>> upstream/master
 void Wcon_CreateConsole( void );
 void Wcon_DestroyConsole( void );
 void Wcon_DisableInput( void );

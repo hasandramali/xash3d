@@ -107,17 +107,14 @@ static const char *bad_file_exts[] =
 	// ban Windows code
 	"exe", "vbs", "com", "bat",
 	"dll", "sys", "ps1",
-<<<<<<< HEAD
 	// ban common unix code
 	// NOTE: in unix anything can be executed as long it has access flag
 	"so", "sh", "dylib",
-=======
 
 	// ban common unix code
 	// NOTE: in unix anything can be executed as long it has access flag
 	"so", "sh", "dylib",
 
->>>>>>> upstream/master
 	// ban mobile archives
 	"apk", "ipa",
 };
@@ -884,7 +881,6 @@ qboolean HTTP_IsSafeFileToDownload( const char *filename )
 	const char *first, *last;
 	const char *ext;
 	int i;
-<<<<<<< HEAD
 	if( !filename[0] )
 		return false;
 	Q_strnlwr( filename, lwrfilename, sizeof( lwrfilename ) );
@@ -901,7 +897,6 @@ qboolean HTTP_IsSafeFileToDownload( const char *filename )
 	if( Q_strlen( first ) != 4 )
 		return false;
 	ext = FS_FileExtension( lwrfilename );
-=======
 
 	if( !filename[0] )
 		return false;
@@ -928,17 +923,13 @@ qboolean HTTP_IsSafeFileToDownload( const char *filename )
 
 	ext = FS_FileExtension( lwrfilename );
 
->>>>>>> upstream/master
 	for( i = 0; i < ARRAYSIZE( bad_file_exts ); i++ )
 	{
 		if( !Q_stricmp( ext, bad_file_exts[i] ) )
 			return false;
 	}
-<<<<<<< HEAD
 	return true;
 }
-=======
 
 	return true;
 }
->>>>>>> upstream/master

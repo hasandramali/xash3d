@@ -719,10 +719,7 @@ void CL_Crashed()
 void CL_WarnLostSplitPacket( void )
 {
 }
-<<<<<<< HEAD
-=======
 
->>>>>>> upstream/master
 void Con_Init( void )
 {
 
