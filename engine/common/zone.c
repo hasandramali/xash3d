@@ -483,4 +483,3 @@ void Memory_Init( void )
 {
 	poolchain = NULL; // init mem chain
 }
-}

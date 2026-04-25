@@ -105,6 +105,7 @@ GCC style indicators (%I64d or %lld).  It supports the C99 specifiers
 for size_t and ptr_diff_t (%jd %zd) as well.
 
 EXTRAS:
+=======
 Like some GCCs, for integers and floats, you can use a ' (single quote)
 specifier and commas will be inserted on the thousands: "%'d" on 12345
 would print 12,345.

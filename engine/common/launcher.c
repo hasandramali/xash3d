@@ -83,7 +83,7 @@ int main( int argc, char** argv )
 	char gamedir_buf[65] = "";
 	const char *gamedir = getenv("XASH3D_GAMEDIR");
 
-	/*#if (!defined(__HAIKU__) && !defined(_WIN32) && !defined(__SAILFISH__))
+/*	#if (!defined(__HAIKU__) && !defined(_WIN32) && !defined(__SAILFISH__))
 	if( !getuid() )
 	{
 		printf( "You shouldn't run Xash3D as root!\n" );
@@ -104,8 +104,5 @@ int main( int argc, char** argv )
 
 	return Host_Main( g_iArgc, g_pszArgv, gamedir, 0, &Launcher_ChangeGame );
 }
-
-#endif // _WIN32
-#endif // SINGLE_BINARY
 #endif // _WIN32
 #endif // SINGLE_BINARY

@@ -32,8 +32,6 @@ static int COM_IsSingleChar( char c )
 {
 	if( c == '{' || c == '}' || c == ')' || c == '(' || c == '\'' || c == ',' )
 		return true;
-	if( host.com_handlecolon && c == ':' )
-		return true;
 
 	if( host.com_handlecolon && c == ':' )
 		return true;
@@ -512,9 +510,6 @@ void GAME_EXPORT Con_Printf( char *szFmt, ... )
 {
 	static char	buffer[16384];	// must support > 1k messages
 	va_list		args;
-
-	if( host_developer->value <= 0 )
-		return;
 
 	va_start( args, szFmt );
 	Q_vsnprintf( buffer, sizeof( buffer ), szFmt, args );
