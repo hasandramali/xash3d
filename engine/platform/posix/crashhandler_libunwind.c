@@ -49,10 +49,12 @@ static void Sys_Crash( int signal, siginfo_t *si, void *ucontext)
 	unw_init_local( &cursor, &context );
 
 	// Safe actions first, stack and memory may be corrupted
+	len = Q_snprintf( message, sizeof( message ), "Ver: Xash3D-NG " XASH_VERSION " (build %i-%s, %s-%s)\n", Q_buildnum(), Q_buildcommit(), Q_buildos(), Q_buildarch() );
+
 	#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
-		len = Q_snprintf( message, sizeof( message ), "Sys_Crash: signal %d, err %d with code %d at %p\n", signal, si->si_errno, si->si_code, si->si_addr );
+		len += Q_snprintf( message, sizeof( message ), "Sys_Crash: signal %d, err %d with code %d at %p\n", signal, si->si_errno, si->si_code, si->si_addr );
 	#else
-		len = Q_snprintf( message, sizeof( message ), "Sys_Crash: signal %d, err %d with code %d at %p %p\n", signal, si->si_errno, si->si_code, si->si_addr, si->si_ptr );
+		len += Q_snprintf( message, sizeof( message ), "Sys_Crash: signal %d, err %d with code %d at %p %p\n", signal, si->si_errno, si->si_code, si->si_addr, si->si_ptr );
 	#endif
 
 	// Flush buffers before writing directly to descriptors

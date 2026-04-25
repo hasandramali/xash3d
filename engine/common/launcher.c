@@ -104,6 +104,11 @@ int main( int argc, char** argv )
 
 	return Host_Main( g_iArgc, g_pszArgv, gamedir, 0, &Launcher_ChangeGame );
 }
+<<<<<<< HEAD
 
 #endif // _WIN32
 #endif // SINGLE_BINARY
+=======
+#endif // _WIN32
+#endif // SINGLE_BINARY
+>>>>>>> upstream/master

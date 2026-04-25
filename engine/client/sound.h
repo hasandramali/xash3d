@@ -257,6 +257,7 @@ extern convar_t	*s_phs;
 extern convar_t *s_reverse_channels;
 extern convar_t	*dsp_room;
 extern convar_t *s_samplecount;
+extern convar_t *snd_mute_losefocus;
 extern portable_samplepair_t		s_rawsamples[MAX_RAW_SAMPLES];
 
 void S_InitScaletable( void );
@@ -264,7 +265,6 @@ wavdata_t *S_LoadSound( sfx_t *sfx );
 float S_GetMasterVolume( void );
 float S_GetMusicVolume( void );
 void S_PrintDeviceName( void );
-void S_Activate( qboolean active );
 
 //
 // s_main.c
@@ -288,8 +288,8 @@ sound_t S_RegisterSound( const char *name );
 void S_FreeSound( sfx_t *sfx );
 
 // s_dsp.c
-qboolean AllocDsps( void );
-void FreeDsps( void );
+void SX_Init( void );
+void SX_Free();
 void CheckNewDspPresets( void );
 void DSP_Process( int idsp, portable_samplepair_t *pbfront, int sampleCount );
 void DSP_ClearState( void );

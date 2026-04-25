@@ -235,7 +235,9 @@ qboolean SV_PlayerRunThink( edict_t *ent, float frametime, double time )
 			return true;
 
 		if( thinktime < time )
-			thinktime = time;
+			thinktime = time;	// don't let things stay in the past.
+					// it is possible to start that way
+					// by a trigger with a local time.
 
 		ent->v.nextthink = 0.0f;
 		svgame.globals->time = thinktime;

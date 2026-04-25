@@ -61,6 +61,7 @@ convar_t	*host_maxfps;
 convar_t	*host_framerate;
 convar_t	*host_sleeptime;
 convar_t	*host_xashds_hacks;
+convar_t	*sys_timescale;
 convar_t	*con_gamemaps;
 convar_t	*download_types;
 convar_t	*build, *ver; // original xash3d info
@@ -681,10 +682,21 @@ Returns false if the time is too short to run a frame
 */
 qboolean Host_FilterTime(float time)
 {
+<<<<<<< HEAD
     static double oldtime;
     float fps;
 
     host.realtime += time;
+=======
+	static double	oldtime;
+	float		fps;
+	double scale = 1.0f;
+
+	if( Host_IsDedicated() || Host_IsLocalClient() )
+		scale = sys_timescale->value;
+
+	host.realtime += time * scale;
+>>>>>>> upstream/master
 
     // dedicated's tic_rate regulates server frame rate.  Don't apply fps filter here.
     fps = host_maxfps->value;
@@ -696,7 +708,11 @@ qboolean Host_FilterTime(float time)
         // limit fps to within tolerable range
         fps = bound(MIN_FPS, fps, MAX_FPS);
 
+<<<<<<< HEAD
         minframetime = 1.0f / fps;
+=======
+		minframetime = 1.0f / fps * scale;
+>>>>>>> upstream/master
 
         if ((host.realtime - oldtime) < minframetime)
         {
@@ -719,10 +735,25 @@ qboolean Host_FilterTime(float time)
         host.frametime = bound(MIN_FRAMETIME, host.frametime, MAX_FRAMETIME);
     }
 
+<<<<<<< HEAD
     host.realframetime = bound(MIN_FRAMETIME, host.frametime, MAX_FRAMETIME);
     oldtime = host.realtime;
 
     return true;
+=======
+	if( host_framerate->value > 0 && ( Host_IsLocalGame()))
+	{
+		fps = host_framerate->value * scale;
+		if( fps > 1 ) fps = 1.0f / fps;
+		host.frametime = fps;
+	}
+	else
+	{	// don't allow really long or short frames
+		host.frametime = bound( MIN_FRAMETIME, host.frametime, MAX_FRAMETIME );
+	}
+	
+	return true;
+>>>>>>> upstream/master
 }
 
 /*
@@ -783,8 +814,6 @@ void Host_Frame( float time )
 	// decide the simulation time
 	if( !Host_FilterTime( time ))
 		return;
-
-	rand (); // keep the random time dependent
 
 	Sys_SendKeyEvents (); // call WndProc on WIN32
 
@@ -1166,9 +1195,16 @@ void Host_InitCommon( int argc, const char** argv, const char *progname, qboolea
 	else
 		Sys_Error( "Changing working directory to %s failed.\n", host.rootdir );
 
+<<<<<<< HEAD
 	if ( g_developer > 0 )
 	{
 		Sys_InitLog( );
+=======
+	if ( g_developer > 0 || Host_IsDedicated() )
+	{
+		Sys_InitLog( );
+
+>>>>>>> upstream/master
 		// print current developer level to simplify processing users feedback
 		Msg( "Developer level: ^3%i\n", g_developer );
 	}
@@ -1287,7 +1323,11 @@ int EXPORT Host_Main( int argc, const char **argv, const char *progname, int bCh
 	host_cheats = Cvar_Get( "sv_cheats", "0", CVAR_LATCH, "allow usage of cheat commands and variables" );
 	host_maxfps = Cvar_Get( "fps_max", "61", CVAR_ARCHIVE, "host fps upper limit" );
 	host_sleeptime = Cvar_Get( "sleeptime", DEFAULT_SLEEPTIME, CVAR_ARCHIVE|CVAR_LOCALONLY, "higher value means lower accuracy" );
+<<<<<<< HEAD
 	host_framerate = Cvar_Get( "host_framerate", "0", CVAR_ARCHIVE, "locks frame timing to this value in seconds" );  
+=======
+	host_framerate = Cvar_Get( "host_framerate", "0", CVAR_LOCALONLY, "locks frame timing to this value in seconds" );
+>>>>>>> upstream/master
 	host_serverstate = Cvar_Get( "host_serverstate", "0", CVAR_INIT, "displays current server state" );
 	host_gameloaded = Cvar_Get( "host_gameloaded", "0", CVAR_INIT, "indicates a loaded game library" );
 	host_menuloaded = Cvar_Get( "host_menuloaded", "0", CVAR_INIT, "indicates a loaded menu library" );
@@ -1300,6 +1340,7 @@ int EXPORT Host_Main( int argc, const char **argv, const char *progname, int bCh
 	host_ver = Cvar_Get( "host_ver", va("%i %s %s %s %s", Q_buildnum(), XASH_VERSION, Q_buildos(), Q_buildarch(), Q_buildcommit() ), CVAR_INIT, "detailed info about this build" );
 	host_mapdesign_fatal = Cvar_Get( "host_mapdesign_fatal", "1", CVAR_ARCHIVE, "make map design errors fatal" );
 	host_xashds_hacks = Cvar_Get( "xashds_hacks", "0", 0, "hacks for xashds in singleplayer" );
+	sys_timescale = Cvar_Get( "sys_timescale", "1.0", CVAR_LOCALONLY, "scale frame time" );
 
 	if( Q_stricmp( GI->gamefolder, "tfc" ) )
 		build = Cvar_Get( "build", "3366", CVAR_INIT, "left for compatibility reasons" );
@@ -1495,6 +1536,9 @@ void EXPORT Host_Shutdown( void )
 	Host_FreeCommon();
 	Sys_DestroyConsole();
 	Sys_RestoreCrashHandler();
+<<<<<<< HEAD
 
+=======
+>>>>>>> upstream/master
 	Sys_CloseLog();
 }

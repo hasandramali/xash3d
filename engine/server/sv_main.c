@@ -105,6 +105,8 @@ convar_t	*sv_userinfo_penalty_attempts;
 convar_t	*sv_fullupdate_enable_penalty;
 convar_t	*sv_fullupdate_penalty_multiplier;
 convar_t	*sv_fullupdate_penalty_time;
+convar_t	*sv_speedhack_kick;
+convar_t	*sv_speedhack_warns;
 convar_t	*sv_master_verbose_heartbeats;
 convar_t	*sv_master_response_timeout;
 
@@ -320,7 +322,7 @@ void SV_CheckCmdTimes( void )
 
 	if( Host_IsLocalGame() )
 		return;
-
+	
 	if(( host.realtime - lastreset ) < 1.0 )
 		return;
 
@@ -857,7 +859,7 @@ void SV_Init( void )
 	sv_stepsize = Cvar_Get( "sv_stepsize", "18", CVAR_ARCHIVE|CVAR_PHYSICINFO, "how high you can step up" );
 	sv_newunit = Cvar_Get( "sv_newunit", "0", 0, "sets to 1 while new unit is loading" );
 	hostname = Cvar_Get( "hostname", "unnamed", CVAR_SERVERNOTIFY|CVAR_ARCHIVE, "host name" );
-	sv_timeout = Cvar_Get( "sv_timeout", "100", CVAR_SERVERNOTIFY, "connection timeout" );
+	sv_timeout = Cvar_Get( "sv_timeout", "65", CVAR_SERVERNOTIFY, "connection timeout" );
 	zombietime = Cvar_Get( "zombietime", "2", CVAR_SERVERNOTIFY, "timeout for clients-zombie (who died but not respawned)" );
 	sv_pausable = Cvar_Get( "pausable", "1", CVAR_SERVERNOTIFY, "allow players to pause or not" );
 	sv_allow_studio_attachment_angles = Cvar_Get( "sv_allow_studio_attachment_angles", "0", CVAR_ARCHIVE, "enable calc angles for attachment points (on studio models)" );
@@ -890,7 +892,7 @@ void SV_Init( void )
 	serverinfo = Cvar_Get( "@serverinfo", "0", CVAR_READ_ONLY, "" ); // use ->modified value only
 	public_server = Cvar_Get ("public", "0", 0, "change server type from private to public" );
 	sv_lighting_modulate = Cvar_Get( "r_lighting_modulate", "0.6", CVAR_ARCHIVE, "lightstyles modulate scale" );
-	sv_reconnect_limit = Cvar_Get ("sv_reconnect_limit", "3", CVAR_ARCHIVE, "max reconnect attempts" );
+	sv_reconnect_limit = Cvar_Get ("sv_reconnect_limit", "1.5", CVAR_ARCHIVE, "max reconnect attempts" );
 	sv_failuretime = Cvar_Get( "sv_failuretime", "0.5", 0, "after this long without a packet from client, don't send any more until client starts sending again" );
 	sv_unlag = Cvar_Get( "sv_unlag", "1", 0, "allow lag compensation on server-side" );
 	sv_maxunlag = Cvar_Get( "sv_maxunlag", "0.5", 0, "max latency which can be interpolated" );
@@ -935,6 +937,9 @@ void SV_Init( void )
 	sv_fullupdate_enable_penalty = Cvar_Get( "sv_fullupdate_enable_penalty", "1", CVAR_ARCHIVE, "enable penalty time for too fast fullupdate command execution" );
 	sv_fullupdate_penalty_multiplier = Cvar_Get( "sv_fullupdate_penalty_multiplier", "2", CVAR_ARCHIVE, "penalty time multiplier" );
 	sv_fullupdate_penalty_time = Cvar_Get( "sv_fullupdate_penalty_time", "1", CVAR_ARCHIVE, "inital penalty time" );
+
+	sv_speedhack_kick = Cvar_Get( "sv_speedhack_kick", "1", CVAR_ARCHIVE, "enable automatic kicking of players who speedhack" );
+	sv_speedhack_warns = Cvar_Get( "sv_speedhack_warns", "8", CVAR_ARCHIVE, "maximum number of warnings before kicking for speedhack" );
 
 	sv_master_verbose_heartbeats = Cvar_Get( "sv_master_verbose_heartbeats", "0", 0, "print every heartbeat to console" );
 	sv_master_response_timeout = Cvar_Get( "sv_master_response_timeout", "4", CVAR_ARCHIVE, "master server heartbeat response timeout in seconds" );

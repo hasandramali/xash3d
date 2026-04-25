@@ -289,11 +289,12 @@ void SV_DirectConnect( netadr_t from )
 		if( cl->state == cs_free || cl->state == cs_zombie || cl->fakeclient )
 			continue;
 
-		if( NET_CompareBaseAdr( from, cl->netchan.remote_address ) && ( cl->netchan.qport == qport || from.port == cl->netchan.remote_address.port ))
+		if( !NET_IsLocalAddress( from ) && NET_CompareBaseAdr( from, cl->netchan.remote_address ) && ( cl->netchan.qport == qport || from.port == cl->netchan.remote_address.port ) )
 		{
-			if( !NET_IsLocalAddress( from ) && ( host.realtime - cl->lastconnect ) < sv_reconnect_limit->value )
+			if( ( host.realtime - cl->lastconnect ) < sv_reconnect_limit->value )
 			{
 				MsgDev( D_INFO, "%s:reconnect rejected : too soon\n", NET_AdrToString( from ));
+				Netchan_OutOfBandPrint( NS_SERVER, from, "%s\nYou are trying to reconnect too quickly!\nPlease try again in a few seconds.\n", errorpacket );
 				Netchan_OutOfBandPrint( NS_SERVER, from, "disconnect\n" );
 				return;
 			}
@@ -1088,6 +1089,10 @@ void SV_RemoteCommand( netadr_t from, sizebuf_t *msg )
 	char		remaining[1024];
 	static char	outputbuf[2048];
 	int		i;
+
+	// Empty password, do nothing.
+	if( !rcon_password->string[0] )
+		return;
 
 	MsgDev( D_INFO, "Rcon from %s:\n%s\n", NET_AdrToString( from ), BF_GetData( msg ) + 4 );
 	SV_BeginRedirect( from, RD_PACKET, outputbuf, sizeof( outputbuf ), SV_FlushRedirect );
@@ -2591,6 +2596,9 @@ void SV_Fullupdate_f( sv_client_t *cl )
 		return;
 	}
 
+	// custom client commands
+	svgame.dllFuncs.pfnClientCommand( cl->edict );
+
 	// resend the ambient sounds for demo recording
 	Host_RestartAmbientSounds();
 	// resend all the decals for demo recording
@@ -3800,15 +3808,16 @@ static void SV_ParseClientMove( sv_client_t *cl, sizebuf_t *msg )
 		SV_RunCmd( cl, &cmds[i], cl->netchan.incoming_sequence - i );
 	}
 
+	// was player kicked? stop here
+	if( cl->state <= cs_zombie )
+		return;
+
 	cl->lastcmd = cmds[0];
 
 	// adjust latency time by 1/2 last client frame since
 	// the message probably arrived 1/2 through client's frame loop
-	if( cl->frames )
-	{
-		frame->latency -= cl->lastcmd.msec * 0.5f / 1000.0f;
-		frame->latency = max( 0.0f, frame->latency );
-	}
+	frame->latency -= cl->lastcmd.msec * 0.5f / 1000.0f;
+	frame->latency = max( 0.0f, frame->latency );
 
 	if( player->v.animtime > svgame.globals->time + host.frametime )
 		player->v.animtime = svgame.globals->time + host.frametime;

@@ -24,6 +24,10 @@ GNU General Public License for more details.
 /*
 ==============
 COM_IsSingleChar
+<<<<<<< HEAD
+=======
+
+>>>>>>> upstream/master
 interpert this character as single
 ==============
 */
@@ -31,8 +35,15 @@ static int COM_IsSingleChar( char c )
 {
 	if( c == '{' || c == '}' || c == ')' || c == '(' || c == '\'' || c == ',' )
 		return true;
+<<<<<<< HEAD
 	if( host.com_handlecolon && c == ':' )
 		return true;
+=======
+
+	if( host.com_handlecolon && c == ':' )
+		return true;
+
+>>>>>>> upstream/master
 	return false;
 }
 
@@ -359,8 +370,11 @@ byte* GAME_EXPORT COM_LoadFileForMe( const char *filename, int *pLength )
 	if( pfile )
 	{
 		file = malloc( iLength + 1 );
-		Q_memcpy( file, pfile, iLength );
-		file[iLength] = '\0';
+		if( file != NULL )
+		{
+			Q_memcpy( file, pfile, iLength );
+			file[iLength] = '\0';
+		}
 		Mem_Free( pfile );
 		pfile = file;
 	}
@@ -505,9 +519,12 @@ void GAME_EXPORT Con_Printf( char *szFmt, ... )
 	static char	buffer[16384];	// must support > 1k messages
 	va_list		args;
 
+<<<<<<< HEAD
 	if( host_developer->value <= 0 )
 		return;
 
+=======
+>>>>>>> upstream/master
 	va_start( args, szFmt );
 	Q_vsnprintf( buffer, sizeof( buffer ), szFmt, args );
 	va_end( args );
@@ -525,8 +542,9 @@ void GAME_EXPORT Con_DPrintf( char *szFmt, ... )
 {
 	static char	buffer[16384];	// must support > 1k messages
 	va_list		args;
+	int devlevel = host_developer != NULL ? host_developer->integer : g_developer;
 
-	if( host_developer->value < D_INFO )
+	if( devlevel <= D_INFO )
 		return;
 
 	va_start( args, szFmt );

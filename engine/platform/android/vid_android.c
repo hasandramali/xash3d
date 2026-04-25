@@ -132,7 +132,7 @@ void GL_InitExtensions( void )
 
 	Cvar_Set( "gl_anisotropy", va( "%f", bound( 0, gl_texture_anisotropy->value, glConfig.max_texture_anisotropy )));
 
-	Cvar_FullSet( "gl_allow_mirrors", "0", CVAR_ARCHIVE ); // No support for Android
+	Cvar_FullSet( "gl_allow_mirrors", "0", CVAR_READ_ONLY ); // No support for Android
 
 	// software mipmap generator does wrong result with NPOT textures ...
 	if( !GL_Support( GL_SGIS_MIPMAPS_EXT ))

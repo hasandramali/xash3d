@@ -831,32 +831,6 @@ void DSP_ClearState( void )
 
 /*
 ===========
-AllocDsps
-
-(xash dsp interface)
-===========
-*/
-qboolean AllocDsps( void )
-{
-	SX_Init();
-
-	return 1;
-}
-
-/*
-===========
-FreeDsps
-
-(xash dsp interface)
-===========
-*/
-void FreeDsps( void )
-{
-	SX_Free();
-}
-
-/*
-===========
 CheckNewDspPresets
 
 (xash dsp interface)

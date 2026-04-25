@@ -895,7 +895,7 @@ void CL_DrawCrosshair( void )
 	int		x, y, width, height;
 	cl_entity_t	*pPlayer;
 
-	if( !crosshair_state.pCrosshair || cl.refdef.crosshairangle[2] || !cl_crosshair->integer )
+	if( !crosshair_state.pCrosshair || !cl_crosshair->integer )
 		return;
 
 	pPlayer = CL_GetLocalPlayer();
@@ -3146,15 +3146,27 @@ static void GAME_EXPORT pfnSetLightmapScale( float scale )
 /*
 =============
 pfnParseFile
+<<<<<<< HEAD
+=======
+
+>>>>>>> upstream/master
 handle colon separately
 =============
 */
 static char GAME_EXPORT *pfnParseFile( char *data, char *token )
 {
 	char *out;
+<<<<<<< HEAD
 	host.com_handlecolon = true;
 	out = COM_ParseFile( data, token );
 	host.com_handlecolon = false;
+=======
+
+	host.com_handlecolon = true;
+	out = COM_ParseFile( data, token );
+	host.com_handlecolon = false;
+
+>>>>>>> upstream/master
 	return out;
 }
 

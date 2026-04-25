@@ -203,6 +203,44 @@ static inline qboolean NET_IsSocketError( int retval )
 #endif
 }
 
+/*
+============
+NET_GetHostByName
+============
+*/
+static int NET_GetHostByName( const char *hostname )
+{
+#ifdef HAVE_GETADDRINFO
+	struct addrinfo *ai = NULL, *cur;
+	struct addrinfo hints;
+	int ip = 0;
+
+	memset( &hints, 0, sizeof( hints ));
+	hints.ai_family = AF_INET;
+
+	if( !getaddrinfo( hostname, NULL, &hints, &ai ))
+	{
+		for( cur = ai; cur; cur = cur->ai_next )
+		{
+			if( cur->ai_family == AF_INET )
+			{
+				ip = *((int*)&((struct sockaddr_in *)cur->ai_addr)->sin_addr);
+				break;
+			}
+		}
+
+		if( ai )
+			freeaddrinfo( ai );
+	}
+
+	return ip;
+#else
+	struct hostent *h;
+	if(!( h = gethostbyname( hostname )))
+		return 0;
+	return *(int *)h->h_addr_list[0];
+#endif
+}
 
 static void NET_NetadrToSockadr( netadr_t *a, struct sockaddr *s )
 {
@@ -244,7 +282,7 @@ static void NET_ResolveThread( void );
 #define mutex_lock pthread_mutex_lock
 #define mutex_unlock pthread_mutex_unlock
 #define exit_thread( x ) pthread_exit(x)
-#define create_thread( pfn ) !pthread_create( &nsthread.thread, NULL, (pfn), NULL )
+#define create_thread( pfn ) pthread_create( &nsthread.thread, NULL, (pfn), NULL )
 #define detach_thread( x ) pthread_detach(x)
 #define mutex_t  pthread_mutex_t
 #define thread_t pthread_t
@@ -300,73 +338,28 @@ static void NET_InitializeCriticalSections( void )
 
 void NET_ResolveThread( void )
 {
-#ifdef HAVE_GETADDRINFO
-	struct addrinfo *ai = NULL, *cur;
-	struct addrinfo hints;
 	int sin_addr = 0;
 
 	RESOLVE_DBG( "[resolve thread] starting resolve for " );
 	RESOLVE_DBG( nsthread.hostname );
+#ifdef HAVE_GETADDRINFO
 	RESOLVE_DBG( " with getaddrinfo\n" );
-	memset( &hints, 0, sizeof( hints ) );
-	hints.ai_family = AF_INET;
-	if( !pGetAddrInfo( nsthread.hostname, NULL, &hints, &ai ) )
-	{
-		for( cur = ai; cur; cur = cur->ai_next ) {
-			if( cur->ai_family == AF_INET ) {
-				sin_addr = *((int*)&((struct sockaddr_in *)cur->ai_addr)->sin_addr);
-				freeaddrinfo( ai );
-				ai = NULL;
-				break;
-			}
-		}
+#else
+	RESOLVE_DBG( " with gethostbyname\n" );
+#endif
 
-		if( ai )
-			freeaddrinfo( ai );
-	}
+	sin_addr = NET_GetHostByName( nsthread.hostname );
 
 	if( sin_addr )
-		RESOLVE_DBG( "[resolve thread] getaddrinfo success\n" );
+		RESOLVE_DBG( "[resolve thread] success\n" );
 	else
-		RESOLVE_DBG( "[resolve thread] getaddrinfo failed\n" );
+		RESOLVE_DBG( "[resolve thread] failed\n" );
 	mutex_lock( &nsthread.mutexres );
 	nsthread.result = sin_addr;
 	nsthread.busy = false;
 	RESOLVE_DBG( "[resolve thread] returning result\n" );
 	mutex_unlock( &nsthread.mutexres );
 	RESOLVE_DBG( "[resolve thread] exiting thread\n" );
-#else
-	struct hostent *res;
-
-	RESOLVE_DBG( "[resolve thread] starting resolve for " );
-	RESOLVE_DBG( nsthread.hostname );
-	RESOLVE_DBG( " with gethostbyname\n" );
-
-	mutex_lock( &nsthread.mutexns );
-	RESOLVE_DBG( "[resolve thread] locked gethostbyname mutex\n" );
-	res = pGetHostByName( nsthread.hostname );
-	if(res)
-		RESOLVE_DBG( "[resolve thread] gethostbyname success\n" );
-	else
-		RESOLVE_DBG( "[resolve thread] gethostbyname failed\n" );
-
-	mutex_lock( &nsthread.mutexres );
-	RESOLVE_DBG( "[resolve thread] returning result\n" );
-	if( res )
-		nsthread.result = *(int *)res->h_addr_list[0];
-	else
-		nsthread.result = 0;
-
-	nsthread.busy = false;
-
-	mutex_unlock( &nsthread.mutexns );
-
-	RESOLVE_DBG( "[resolve thread] unlocked gethostbyname mutex\n" );
-
-	mutex_unlock( &nsthread.mutexres );
-
-	RESOLVE_DBG( "[resolve thread] exiting thread\n" );
-#endif
 }
 
 #endif // CAN_ASYNC_NS_RESOLVE
@@ -414,116 +407,52 @@ int NET_StringToSockaddr( const char *s, struct sockaddr *sadr, qboolean nonbloc
 		{
 #ifdef CAN_ASYNC_NS_RESOLVE
 			qboolean asyncfailed = false;
-#ifdef _WIN32
-			if ( InitializeCriticalSection )
-#endif // _WIN32
+			if( nonblocking )
 			{
-				if( !nonblocking )
+				mutex_lock( &nsthread.mutexres );
+
+				if( nsthread.busy )
 				{
-#ifdef HAVE_GETADDRINFO
-					struct addrinfo *ai = NULL, *cur;
-					struct addrinfo hints;
+					mutex_unlock( &nsthread.mutexres );
+					return 2;
+				}
 
-					memset( &hints, 0, sizeof( hints ) );
-					hints.ai_family = AF_INET;
-					if( !pGetAddrInfo( copy, NULL, &hints, &ai ) )
-					{
-						for( cur = ai; cur; cur = cur->ai_next ) {
-							if( cur->ai_family == AF_INET ) {
-								ip = *((int*)&((struct sockaddr_in *)cur->ai_addr)->sin_addr);
-								freeaddrinfo(ai);
-								ai = NULL;
-								break;
-							}
-						}
-
-						if( ai )
-							freeaddrinfo(ai);
-					}
-#else
-					struct hostent *h;
-
-					mutex_lock( &nsthread.mutexns );
-					h = pGetHostByName( copy );
-					if( !h )
-					{
-						mutex_unlock( &nsthread.mutexns );
-						return 0;
-					}
-
-					ip = *(int *)h->h_addr_list[0];
-					mutex_unlock( &nsthread.mutexns );
-#endif
+				if( !Q_strcmp( copy, nsthread.hostname ) )
+				{
+					ip = nsthread.result;
+					nsthread.hostname[0] = 0;
+					detach_thread( nsthread.thread );
 				}
 				else
 				{
-					mutex_lock( &nsthread.mutexres );
-
-					if( nsthread.busy )
-					{
-						mutex_unlock( &nsthread.mutexres );
-						return 2;
-					}
-
-					if( !Q_strcmp( copy, nsthread.hostname ) )
-					{
-						ip = nsthread.result;
-						nsthread.hostname[0] = 0;
-						detach_thread( nsthread.thread );
-					}
-					else
-					{
-						Q_strncpy( nsthread.hostname, copy, MAX_STRING );
-						nsthread.busy = true;
-						mutex_unlock( &nsthread.mutexres );
-
-						if( create_thread( Net_ThreadStart ) )
-							return 2;
-						else // failed to create thread
-						{
-							MsgDev( D_ERROR, "NET_StringToSockaddr: failed to create thread!\n");
-							nsthread.busy = false;
-							asyncfailed = true;
-						}
-					}
-
+					Q_strncpy( nsthread.hostname, copy, MAX_STRING );
+					nsthread.busy = true;
 					mutex_unlock( &nsthread.mutexres );
-				}
-			}
 #ifdef _WIN32
-			else
-				asyncfailed = true;
+					if( create_thread( Net_ThreadStart ) )
 #else
+					int result = create_thread( Net_ThreadStart );
+					if( !result )
+#endif
+						return 2;
+					else // failed to create thread
+					{
+#ifdef _WIN32
+						MsgDev( D_ERROR, "NET_StringToSockaddr: failed to create thread!\n");
+#else
+						MsgDev( D_ERROR, "NET_StringToSockaddr: failed to create thread! (%s)\n", strerror( result ));
+#endif
+						nsthread.busy = false;
+						asyncfailed = true;
+					}
+				}
+
+				mutex_unlock( &nsthread.mutexres );
+			}
 			if( asyncfailed )
-#endif // _WIN32
 #endif // CAN_ASYNC_NS_RESOLVE
 			{
-#ifdef HAVE_GETADDRINFO
-				struct addrinfo *ai = NULL, *cur;
-				struct addrinfo hints;
-
-				memset( &hints, 0, sizeof( hints ) );
-				hints.ai_family = AF_INET;
-				if( !pGetAddrInfo( copy, NULL, &hints, &ai ) )
-				{
-					for( cur = ai; cur; cur = cur->ai_next ) {
-						if( cur->ai_family == AF_INET ) {
-							ip = *((int*)&((struct sockaddr_in *)cur->ai_addr)->sin_addr);
-							freeaddrinfo(ai);
-							ai = NULL;
-							break;
-						}
-					}
-
-					if( ai )
-						freeaddrinfo(ai);
-				}
-#else
-				struct hostent *h;
-				if(!( h = pGetHostByName( copy )))
-					return 0;
-				ip = *(int *)h->h_addr_list[0];
-#endif
+				ip = NET_GetHostByName( copy );
 			}
 
 			if( !ip )

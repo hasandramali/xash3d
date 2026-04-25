@@ -96,6 +96,9 @@ float S_GetMasterVolume( void )
 {
 	float	scale = 1.0f;
 
+	if( host.state == HOST_NOFOCUS && snd_mute_losefocus->integer )
+		return 0.0f;
+
 	if( !s_listener.inmenu && soundfade.percent != 0 )
 	{
 		scale = bound( 0.0f, soundfade.percent / 100.0f, 1.0f );
@@ -903,6 +906,9 @@ void S_StartSound( const vec3_t pos, int ent, int chan, sound_t handle, float fv
 	// spatialize
 	Q_memset( target_chan, 0, sizeof( *target_chan ));
 
+	if( Host_IsDedicated() || Host_IsLocalClient() )
+		pitch *= ( sys_timescale->value + 1 ) / 2;
+
 	VectorCopy( pos, target_chan->origin );
 	target_chan->staticsound = ( ent == 0 ) ? true : false;
 	target_chan->use_loop = (flags & SND_STOP_LOOPING) ? false : true;
@@ -972,20 +978,6 @@ void S_StartSound( const vec3_t pos, int ent, int chan, sound_t handle, float fv
 
 	// Init client entity mouth movement vars
 	SND_InitMouth( ent, chan );
-
-	for( ch_idx = NUM_AMBIENTS, check = channels + NUM_AMBIENTS; ch_idx < MAX_DYNAMIC_CHANNELS; ch_idx++, check++)
-	{
-		if( check == target_chan ) continue;
-
-		if( check->sfx == sfx && !check->pMixer.sample )
-		{
-			// skip up to 0.1 seconds of audio
-			int skip = Com_RandomLong( 0, (int)( 0.1f * check->sfx->cache->rate ));
-
-			S_SetSampleStart( check, sfx->cache, skip );
-			break;
-		}
-	}
 }
 
 /*
@@ -1189,6 +1181,9 @@ void S_AmbientSound( const vec3_t pos, int ent, sound_t handle, float fvol, floa
 		S_FreeChannel( ch );
 		return;
 	}
+
+	if( Host_IsDedicated() || Host_IsLocalClient() )
+		pitch *= ( sys_timescale->value + 1 ) / 2;
 
 	// never update positions if source entity is 0
 	ch->staticsound = ( ent == 0 ) ? true : false;
@@ -1849,7 +1844,7 @@ qboolean S_Init( void )
 	S_InitScaletable ();
 	S_StopAllSounds ();
 	VOX_Init ();
-	AllocDsps ();
+	SX_Init ();
 
 	return true;
 #else // XASH_SOUND != SOUND_NULL
@@ -1879,7 +1874,7 @@ void S_Shutdown( void )
 	S_StopAllSounds ();
 	S_FreeSounds ();
 	VOX_Shutdown ();
-	FreeDsps ();
+	SX_Free ();
 
 	SNDDMA_Shutdown ();
 	MIX_FreeAllPaintbuffers ();
